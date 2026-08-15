@@ -1,0 +1,54 @@
+[package]
+name = "lepton-auth-ui"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "Leptos auth form components (Orbital) for lepton-auth server functions"
+publish = false
+
+[dependencies]
+lepton-auth = { workspace = true, default-features = false }
+leptos = { workspace = true }
+leptos_router = { workspace = true }
+orbital-primitives = { workspace = true, default-features = false }
+orbital-core-components = { workspace = true }
+orbital-base-components = { workspace = true }
+orbital-motion = { workspace = true }
+turf = { workspace = true }
+# Keep lightningcss on parcel_selectors 0.28.1 (cssparser 0.33); see workspace pin.
+parcel_selectors = { workspace = true }
+cfg-if = { workspace = true }
+tracing = { workspace = true }
+wasm-bindgen-futures = { workspace = true, optional = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Gates Continue with Google / the “or” divider in OAuthProviderButtons.
+oauth-google = ["lepton-auth/oauth-google"]
+# Gates Continue with GitHub / the “or” divider in OAuthProviderButtons.
+oauth-github = ["lepton-auth/oauth-github"]
+hydrate = [
+    "orbital-primitives/hydrate",
+    "orbital-motion/hydrate",
+    "leptos/hydrate",
+    "lepton-auth/hydrate",
+    "dep:wasm-bindgen-futures",
+]
+ssr = [
+    "orbital-primitives/ssr",
+    "leptos/ssr",
+    "leptos_router/ssr",
+    "lepton-auth/ssr",
+    "lepton-auth/totp",
+    "lepton-auth/phone",
+]
+
+[package.metadata.turf]
+minify = true
+
+[package.metadata.turf-dev]
+minify = false

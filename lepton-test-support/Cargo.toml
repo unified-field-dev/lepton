@@ -1,0 +1,31 @@
+[package]
+name = "lepton-test-support"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Test-only Lepton identity builders, seed scenarios, and harness seed HTTP"
+publish = false
+
+[features]
+default = []
+# Axum `POST /api/test/seed-data` handler (harness / e2e hosts only).
+axum = ["dep:axum"]
+
+[dependencies]
+lepton-auth = { workspace = true, features = ["ssr", "email", "phone", "totp"] }
+lepton-host-adapter = { workspace = true, features = ["ssr", "db-sqlite"] }
+lepton-identity = { workspace = true, features = ["db-sqlite"] }
+valence = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+axum = { workspace = true, optional = true }
+
+[dev-dependencies]
+lepton-e2e = { path = "../lepton-e2e", default-features = false }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+lepton-identity = { workspace = true, features = ["db-sqlite"] }
+
+[lints]
+workspace = true

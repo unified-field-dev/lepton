@@ -1,0 +1,41 @@
+[package]
+name = "lepton-smtp"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "Provider-agnostic email delivery for verification and password-reset flows"
+publish = false
+
+[features]
+default = []
+# Live Twilio SendGrid Mail Send adapter (`TwilioEmailAdapter`).
+twilio = ["dep:reqwest", "dep:serde_json"]
+# Emit `lepton_email_send` Spectra counters on terminal send outcomes.
+spectra = ["dep:lepton-spectra-telemetry"]
+
+[dependencies]
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1-rustls-tls"] }
+hickory-resolver = "0.24"
+thiserror.workspace = true
+async-trait.workspace = true
+tokio = { workspace = true, features = ["time"] }
+tracing = "0.1"
+serde = { workspace = true, features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+serde_json = { workspace = true, optional = true }
+lepton-spectra-telemetry = { workspace = true, optional = true }
+
+[dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std"] }
+wiremock = "0.6"
+spectra = { workspace = true, features = ["mem"] }
+spectra-core = { workspace = true }
+chrono = { workspace = true }
+
+[lints]
+workspace = true

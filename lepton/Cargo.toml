@@ -1,0 +1,18 @@
+[package]
+name = "lepton"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "User-domain SSR bindings re-exported from lepton-host-adapter"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+lepton-host-adapter = { workspace = true, optional = true }
+
+[features]
+default = []
+ssr = ["dep:lepton-host-adapter", "lepton-host-adapter/ssr"]

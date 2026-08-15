@@ -1,0 +1,25 @@
+[package]
+name = "lepton-spectra-telemetry"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Lepton Spectra delivery + auth funnel metrics and failure events"
+readme = "README.md"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+spectra = { workspace = true, features = ["mem"] }
+spectra-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
+[[example]]
+name = "email_send_record_smoke"

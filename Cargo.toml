@@ -1,0 +1,177 @@
+[workspace]
+resolver = "2"
+members = [
+    "lepton-identity",
+    "lepton-smtp",
+    "lepton-sms",
+    "lepton-spectra-telemetry",
+    "lepton-host-adapter",
+    "lepton-auth",
+    "lepton-auth-ui",
+    "lepton-auth-ui-e2e",
+    "lepton",
+    "lepton-e2e",
+    "lepton-test-support",
+]
+
+[[workspace.metadata.leptos]]
+name = "lepton-auth-ui-e2e"
+bin-package = "lepton-auth-ui-e2e"
+lib-package = "lepton-auth-ui-e2e"
+site-root = "lepton-auth-ui-e2e/site"
+site-pkg-dir = "pkg"
+end2end-dir = "lepton-auth-ui-e2e/end2end"
+end2end-cmd = "npm test"
+# Keep clear of unified-field-product / embedded hosts on :3000–:3001.
+site-addr = "127.0.0.1:3120"
+reload-port = 3121
+bin-features = ["ssr"]
+lib-features = ["hydrate"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/unified-field-dev/lepton"
+
+# Deny undocumented public items. Only crates that opt in with `[lints]\nworkspace = true`
+# inherit this; unlisted workspace members are unaffected until they opt in too.
+[workspace.lints.rust]
+missing_docs = "deny"
+# leptos-lints (Dylint) names are unknown to rustc/clippy alone
+unknown_lints = "allow"
+leptos_print_stdout = "deny"
+leptos_event_target = "deny"
+leptos_event_target_value = "deny"
+leptos_unscoped_spawn = "deny"
+
+[workspace.metadata.dylint]
+libraries = [{ git = "https://github.com/leptos-rs/leptos-lints", tag = "v0.1.2" }]
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+return_self_not_must_use = "allow"
+# `#[async_trait]` desugars each `async fn` into a boxed future the macro marks
+# `#[must_use]`; on methods returning `Result` this trips `double_must_use` on the
+# generated code, so silence the false positive.
+double_must_use = "allow"
+# Newer nightly pedantic lint; keep the existing assert style in tests.
+assert_is_empty = "allow"
+
+[workspace.dependencies]
+# Leptos
+leptos = { version = "0.8.20", default-features = false, features = ["nightly"] }
+leptos_meta = { version = "0.8", default-features = false }
+leptos_router = { version = "0.8", default-features = false, features = ["nightly"] }
+leptos_axum = { version = "0.8", default-features = false }
+
+# Zone A Orbital UI (git)
+orbital-core-components = { git = "https://github.com/unified-field-dev/orbital", branch = "main" }
+orbital-base-components = { git = "https://github.com/unified-field-dev/orbital", branch = "main" }
+orbital-primitives = { git = "https://github.com/unified-field-dev/orbital", branch = "main", default-features = false }
+orbital-motion = { git = "https://github.com/unified-field-dev/orbital", branch = "main", default-features = false }
+orbital-theme = { git = "https://github.com/unified-field-dev/orbital", branch = "main", default-features = false }
+
+# Platform: crates.io for published cores; git for unpublished kits on unified-field-dev
+valence = { package = "uf-valence", version = "0.1.5", default-features = false, features = ["mem", "sqlite"] }
+valence-codegen = { package = "uf-valence-codegen", version = "0.1.5" }
+higgs = { git = "https://github.com/unified-field-dev/higgs", branch = "main", default-features = false }
+higgs-core = { git = "https://github.com/unified-field-dev/higgs", branch = "main", package = "higgs-core", default-features = false }
+higgs-host = { git = "https://github.com/unified-field-dev/higgs", branch = "main", package = "higgs-host", default-features = false }
+higgs-identity = { git = "https://github.com/unified-field-dev/higgs", branch = "main", package = "higgs-identity" }
+higgs-macros = { git = "https://github.com/unified-field-dev/higgs", branch = "main", package = "higgs-macros" }
+photon = { package = "uf-photon", version = "0.1.3", default-features = false }
+photon-leptos = { version = "0.1.2", default-features = false }
+photon-axum = { version = "0.1.2", default-features = false }
+spectra = { package = "uf-spectra", version = "0.1.2", default-features = false }
+spectra-core = { package = "uf-spectra-core", version = "0.1.2" }
+totp-rs = { version = "5.7", default-features = false }
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+tracing = "0.1"
+futures = "0.3"
+
+
+# In-repo
+lepton-auth = { path = "lepton-auth", default-features = false }
+lepton-auth-ui = { path = "lepton-auth-ui", default-features = false }
+lepton-identity = { path = "lepton-identity", default-features = false, features = ["db-sqlite"] }
+lepton-smtp = { path = "lepton-smtp" }
+lepton-sms = { path = "lepton-sms" }
+lepton-spectra-telemetry = { path = "lepton-spectra-telemetry" }
+lepton-host-adapter = { path = "lepton-host-adapter", default-features = false, features = ["db-sqlite"] }
+
+# Boson — durable delivery under lepton-auth `boson-delivery`
+boson-core = { version = "0.1.3" }
+boson-macros = { version = "0.1.3" }
+boson-runtime = { version = "0.1.3", default-features = false }
+boson-valence-identity = { git = "https://github.com/unified-field-dev/boson-valence-identity", branch = "main" }
+boson-backend-mem = { version = "0.1.3" }
+quark = { package = "uf-quark", version = "0.1.3" }
+
+# UI / styling
+turf = "0.10"
+# lightningcss 1.0.0-alpha.65 expects parcel_selectors 0.28.1 (cssparser 0.33).
+# 0.28.3 pulls cssparser 0.37 and breaks the wasm hydrate build.
+parcel_selectors = "=0.28.1"
+wasm-bindgen = "=0.2.126"
+web-sys = { version = "=0.3.103", features = ["HtmlElement", "DomRect", "Element", "Node", "Document", "File", "FileList", "FormData", "HtmlInputElement", "Request", "RequestInit", "Response", "Headers", "Window"] }
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+
+# Misc
+http = "1"
+cfg-if = "1"
+thiserror = "2"
+url = "2"
+urlencoding = "2.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+async-trait = "0.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+axum = "0.8.4"
+axum-login = "0.18.0"
+tower-sessions = "0.14.0"
+argon2 = "0.5"
+sha2 = "0.10"
+password-hash = "0.5"
+rand_core = { version = "0.6", features = ["std"] }
+uuid = { version = "1", features = ["serde", "v4", "v5"] }
+chrono = { version = "0.4", features = ["serde"] }
+webauthn-rs = { version = "0.5.5", default-features = false, features = ["danger-allow-state-serialisation"] }
+
+# Transitive kits may still git-pin older Valence/Boson/Photon; force one crates.io graph.
+[patch."https://github.com/unified-field-dev/valence"]
+uf-valence = { version = "0.1.5" }
+uf-valence-core = { version = "0.1.5" }
+uf-valence-codegen = { version = "0.1.5" }
+uf-valence-macros = { version = "0.1.5" }
+uf-valence-telemetry = { version = "0.1.5" }
+uf-valence-backend-mem = { version = "0.1.5" }
+uf-valence-backend-sqlite = { version = "0.1.5" }
+uf-valence-backend-sql = { version = "0.1.5" }
+
+[patch."https://github.com/unified-field-dev/boson"]
+boson-core = { version = "0.1.3" }
+boson-macros = { version = "0.1.3" }
+boson-runtime = { version = "0.1.3" }
+boson-telemetry = { version = "0.1.3" }
+boson-backend-mem = { version = "0.1.3" }
+
+[patch."https://github.com/unified-field-dev/photon"]
+uf-photon = { version = "0.1.3" }
+uf-photon-core = { version = "0.1.3" }
+photon-runtime = { version = "0.1.3" }
+photon-backend = { version = "0.1.3" }
+photon-telemetry = { version = "0.1.3" }
+photon-macros = { version = "0.1.3" }

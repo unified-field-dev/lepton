@@ -1,0 +1,123 @@
+//! Confirm / id-verify library APIs.
+
+use chrono::Utc;
+use lepton_host_adapter::generated::{AccountEmail, AccountPhone, User};
+use valence::{Model, RecordId, Valence};
+
+use super::TrustError;
+
+fn bare_id(record: &RecordId) -> String {
+    valence::extract_id_from_record(record).unwrap_or_else(|_| record.id().to_string())
+}
+
+async fn load_user(valence: &Valence, user: &RecordId) -> Result<User, TrustError> {
+    let uid = bare_id(user);
+    User::get(&uid, valence)
+        .await
+        .map_err(|_| TrustError::Store)?
+        .ok_or(TrustError::UserMissing)
+}
+
+/// Whether the user's primary email contact has `verified_at`.
+///
+/// # Errors
+///
+/// [`TrustError::Store`] / [`TrustError::UserMissing`].
+pub async fn primary_email_verified(
+    valence: &Valence,
+    user: &RecordId,
+) -> Result<bool, TrustError> {
+    let user = load_user(valence, user).await?;
+    let Some(primary) = user.primary_email() else {
+        return Ok(false);
+    };
+    let email = AccountEmail::get(&bare_id(primary), valence)
+        .await
+        .map_err(|_| TrustError::Store)?;
+    Ok(email.is_some_and(|e| e.verified_at().is_some()))
+}
+
+/// Whether the user's primary phone contact has `verified_at`.
+///
+/// # Errors
+///
+/// [`TrustError::Store`] / [`TrustError::UserMissing`].
+pub async fn primary_phone_verified(
+    valence: &Valence,
+    user: &RecordId,
+) -> Result<bool, TrustError> {
+    let user = load_user(valence, user).await?;
+    let Some(primary) = user.primary_phone() else {
+        return Ok(false);
+    };
+    let phone = AccountPhone::get(&bare_id(primary), valence)
+        .await
+        .map_err(|_| TrustError::Store)?;
+    Ok(phone.is_some_and(|p| p.verified_at().is_some()))
+}
+
+/// Whether `User.confirmed_at` is set.
+///
+/// # Errors
+///
+/// Store / missing user.
+pub async fn is_confirmed(valence: &Valence, user: &RecordId) -> Result<bool, TrustError> {
+    Ok(load_user(valence, user).await?.confirmed_at().is_some())
+}
+
+/// Whether `User.id_verified_at` is set.
+///
+/// # Errors
+///
+/// Store / missing user.
+pub async fn is_id_verified(valence: &Valence, user: &RecordId) -> Result<bool, TrustError> {
+    Ok(load_user(valence, user).await?.id_verified_at().is_some())
+}
+
+/// Set `confirmed_at` when both primary email and primary phone are verified.
+///
+/// Login must **not** require this flag (soft gate; product UI may prompt).
+///
+/// # Errors
+///
+/// [`TrustError::ConfirmBlocked`] when primaries are missing or unverified.
+pub async fn confirm_user(valence: &Valence, user: &RecordId) -> Result<(), TrustError> {
+    if !primary_email_verified(valence, user).await?
+        || !primary_phone_verified(valence, user).await?
+    {
+        return Err(TrustError::ConfirmBlocked);
+    }
+    let row = load_user(valence, user).await?;
+    if row.confirmed_at().is_some() {
+        return Ok(());
+    }
+    let now = Utc::now();
+    row.get_mutable(valence)
+        .set_confirmed_at(now)
+        .map_err(|_| TrustError::Store)?
+        .set_updated_at(now)
+        .map_err(|_| TrustError::Store)?
+        .commit()
+        .await
+        .map_err(|_| TrustError::Store)?;
+    Ok(())
+}
+
+/// System/admin stub: set `id_verified_at` (no ID vendor).
+///
+/// # Errors
+///
+/// Store / missing user.
+pub async fn mark_user_id_verified(valence: &Valence, user: &RecordId) -> Result<(), TrustError> {
+    let row = load_user(valence, user).await?;
+    let now = Utc::now();
+    row.get_mutable(valence)
+        .set_id_verified_at(now)
+        .map_err(|_| TrustError::Store)?
+        .set_updated_at(now)
+        .map_err(|_| TrustError::Store)?
+        .commit()
+        .await
+        .map_err(|_| TrustError::Store)?;
+    Ok(())
+}

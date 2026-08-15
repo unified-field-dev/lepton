@@ -1,0 +1,199 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_BUILD_JOBS: "1"
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Leptos `nightly` feature + Orbital UI need a nightly toolchain (stable
+      # cannot satisfy Signal-as-Fn / reactive style bounds).
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy
+      # lld + thinner debuginfo: default ld OOMs linking lepton-auth integ tests.
+      - name: Install lld
+        run: sudo apt-get update && sudo apt-get install -y lld
+      - name: Formatting check
+        run: >
+          cargo fmt --check
+          -p lepton-auth -p lepton-auth-ui -p lepton-auth-ui-e2e
+          -p lepton-identity -p lepton-smtp -p lepton-sms
+          -p lepton-host-adapter -p lepton
+      - name: Clippy (ssr,full)
+        run: cargo clippy --workspace --all-targets --features ssr,full -- -D warnings
+      - name: Test (ssr,full)
+        # Exclude Leptos UI crates — e2e job covers them. Use lld to avoid ld bus errors.
+        env:
+          RUSTFLAGS: "-D warnings -C link-arg=-fuse-ld=lld"
+          CARGO_PROFILE_TEST_DEBUG: "line-tables-only"
+        run: >
+          cargo test --workspace --features ssr,full
+          --exclude lepton-auth-ui
+          --exclude lepton-auth-ui-e2e
+      - name: Clippy Twilio adapters
+        run: >
+          cargo clippy -p lepton-sms -p lepton-smtp --all-targets
+          --features twilio -- -D warnings
+      - name: Test Twilio adapters
+        run: >
+          cargo test -p lepton-sms --features twilio &&
+          cargo test -p lepton-smtp --features twilio
+      - name: Check delivery crates without twilio feature
+        run: cargo check -p lepton-sms -p lepton-smtp
+      - name: Check ssr-only (no channel deps)
+        run: cargo check -p lepton-auth --features ssr
+      - name: cargo doc
+        run: cargo doc --workspace --no-deps --features ssr,full
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+      - name: cargo doc (Twilio adapters)
+        run: cargo doc -p lepton-sms -p lepton-smtp --no-deps --features twilio
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+
+  leptos-lints:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: dylint-6.0.1
+
+      # Install from crates.io (not taiki-e prebuilts): some prebuilt cargo-dylint
+      # binaries bake DYLINT_DRIVER_MANIFEST_DIR to a CI path and fail with
+      # "Unable to update .../dylint/driver".
+      - name: Install cargo-dylint
+        run: |
+          cargo install cargo-dylint --locked --version 6.0.1 --force
+          cargo install dylint-link --locked --version 6.0.1 --force
+
+      # leptos-lints@v0.1.2 pins nightly-2025-05-14; lint hydrate UI crates with
+      # `--no-deps` where Leptos API lints apply. The e2e host needs wasm32 so
+      # target-specific `web-sys` deps resolve.
+      #
+      # CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS=fallback: the ephemeral dylint
+      # driver build otherwise resolves cargo-platform 0.3.3 (MSRV 1.91) against
+      # rustc 1.89 on that pinned nightly.
+      - name: Install leptos-lints nightly toolchain
+        run: rustup toolchain install nightly-2025-05-14 --component rustc-dev,llvm-tools-preview
+
+      - name: cargo dylint (leptos-lints)
+        # zerocopy on this pinned nightly needs AVX512 on the host triple (same as orbital).
+        # Lint hydrate on the host; wasm32 compile is covered by the wasm-hydrate job
+        # (stdarch_x86_avx512 is unknown on wasm32).
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
+          RUSTFLAGS: "-D warnings -Zcrate-attr=feature(stdarch_x86_avx512)"
+        run: |
+          cargo dylint --all -p lepton-auth-ui --no-deps -- --features hydrate
+          cargo dylint --all -p lepton-auth-ui-e2e --no-deps -- --features hydrate
+
+  wasm-hydrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: wasm-hydrate-nightly
+
+      - name: cargo check hydrate wasm
+        run: cargo check -p lepton-auth-ui --target wasm32-unknown-unknown --features hydrate
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: e2e-nightly
+          cache-on-failure: true
+
+      - name: Install cargo-leptos
+        run: cargo install cargo-leptos --locked --version 0.3.6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: lepton-auth-ui-e2e/end2end/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: lepton-auth-ui-e2e/end2end
+        run: npm ci
+
+      - name: Get Playwright version
+        id: pw-version
+        working-directory: lepton-auth-ui-e2e/end2end
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: lepton-auth-ui-e2e/end2end
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright OS deps when cache hit
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: lepton-auth-ui-e2e/end2end
+        run: npx playwright install-deps chromium
+
+      # Confirm-funnel Playwright needs SMTP capture (host dials 127.0.0.1:1025 / API :8025).
+      - name: Start Mailpit
+        run: docker compose -f infra/mailpit/docker-compose.yml up -d
+
+      - name: Wait for Mailpit API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:8025/api/v1/info" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Mailpit did not become ready" >&2
+          exit 1
+
+      - name: cargo leptos end-to-end
+        env:
+          CI: true
+        run: cargo leptos end-to-end --project lepton-auth-ui-e2e
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ github.run_id }}
+          path: |
+            lepton-auth-ui-e2e/end2end/playwright-report/
+            lepton-auth-ui-e2e/end2end/test-results/
+          if-no-files-found: ignore

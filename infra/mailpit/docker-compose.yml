@@ -1,0 +1,19 @@
+# Local Mailpit sidecars for lepton delivery tests.
+# Usage:
+#   docker compose -f infra/mailpit/docker-compose.yml up -d
+#   set -a; source infra/mailpit/mailpit.env.example; set +a
+#   ./infra/mailpit/smtp_smoke.sh
+#
+# Lab HTTP sidecars (run via cargo; not Docker images):
+#   mock OIDC: cargo run -p lepton-e2e --bin lepton-mock-oidc   # 5556
+#   SMS sink:  cargo run -p lepton-e2e --bin lepton-sms-sink    # 8099
+services:
+  mailpit:
+    image: axllent/mailpit:v1.21
+    # Local-only: bind to loopback so the SMTP/UI ports are never exposed on the LAN.
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"

@@ -1,0 +1,34 @@
+[package]
+name = "lepton-identity"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "Leptos-free Valence models and password hashing for Lepton identity (user, account, profile)"
+publish = false
+
+[dependencies]
+valence = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+argon2 = { workspace = true }
+password-hash = { workspace = true }
+rand_core = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+
+[build-dependencies]
+valence-codegen = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = ["db-sqlite"]
+db-sqlite = ["valence/sqlite"]
+db-hybrid = ["valence/hybrid"]
+# Fault-injection hooks for SideEffect contract tests (lepton-auth `test-utils`).
+test-utils = []

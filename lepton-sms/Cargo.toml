@@ -1,0 +1,37 @@
+[package]
+name = "lepton-sms"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "Provider-agnostic SMS delivery for Lepton auth flows (Noop/Test; optional Twilio)"
+publish = false
+
+[features]
+default = []
+# Live Twilio Messages REST adapter (`TwilioSmsAdapter`).
+twilio = ["dep:base64"]
+# Emit `lepton_sms_send` Spectra counters on terminal send outcomes.
+spectra = ["dep:lepton-spectra-telemetry"]
+
+[dependencies]
+thiserror.workspace = true
+async-trait.workspace = true
+tokio = { workspace = true, features = ["time"] }
+tracing = "0.1"
+serde = { workspace = true, features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde_json = { workspace = true }
+base64 = { version = "0.22", optional = true }
+lepton-spectra-telemetry = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+wiremock = "0.6"
+serde_json = { workspace = true }
+spectra = { workspace = true, features = ["mem"] }
+spectra-core = { workspace = true }
+chrono = { workspace = true }
+
+[lints]
+workspace = true
