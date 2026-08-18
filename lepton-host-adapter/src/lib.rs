@@ -75,14 +75,20 @@ pub mod photon_auth;
 #[cfg(feature = "ssr")]
 pub mod files;
 
+// Inline so crate-root rustdoc pages exist (e.g. `struct.Backend.html`). Sibling
+// crates such as `lepton-auth` link those paths from their task tables.
 #[cfg(feature = "ssr")]
+#[doc(inline)]
 pub use auth::{Backend, Credentials, User};
 
 #[cfg(feature = "ssr")]
+#[doc(inline)]
 pub use axum_login::AuthSession;
 
 #[cfg(feature = "ssr")]
+#[doc(inline)]
 pub use photon_auth::{extract_user_key, PhotonAuth};
 
 #[cfg(feature = "ssr")]
+#[doc(inline)]
 pub use session::session_snapshot_middleware;
