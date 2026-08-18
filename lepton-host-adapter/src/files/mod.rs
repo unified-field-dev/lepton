@@ -1,9 +1,8 @@
 //! Profile photo upload / serve over Axum (`/api/files/*`).
 //!
-//! # Owns
-//!
-//! - Authn + ownership checks before System Valence `ProfilePhoto` create
-//! - Byte I/O via [`crate::files::FileByteBackend`] (default [`crate::files::LocalDiskBlobStore`])
+//! Authenticates the caller and checks ownership before creating System Valence
+//! `ProfilePhoto` records. Byte I/O runs through [`crate::files::FileByteBackend`]
+//! (default [`crate::files::LocalDiskBlobStore`]).
 //!
 //! # Concern → API
 //!
@@ -14,7 +13,9 @@
 //! | Serve | [`crate::files::serve_handler`] |
 //! | Bytes | [`crate::files::FileByteBackend`], [`crate::files::LocalDiskBlobStore`] |
 //!
-//! # Host mount
+//! # Examples
+//!
+//! Mount upload + serve routes inside the auth / session stack:
 //!
 //! ```rust,ignore
 //! use std::sync::Arc;

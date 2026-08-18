@@ -10,7 +10,7 @@
 //! | Fluent user in a known state | [`builder::TestUserBuilder`] |
 //! | Named Playwright scenarios | [`scenario::run_seed`] |
 //! | HTTP types | [`http::SeedRequest`] / [`http::SeedResponse`] |
-//! | Axum mount (`feature = "axum"`) | [`http::seed_data`] / [`http::SeedValence`] |
+//! | Axum mount (`feature = "axum"`) | `http::seed_data`, `http::SeedValence` (see [`http`]) |
 //! | Fixed TOTP secret | [`builder::HARNESS_TOTP_SECRET`] |
 //!
 //! # Must not mount in production

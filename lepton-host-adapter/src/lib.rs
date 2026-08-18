@@ -8,7 +8,7 @@
 //! |--------|------------|
 //! | Axum-login backend + session user | [`Backend`], [`Credentials`], [`User`] |
 //! | Mirror session into higgs | [`session_snapshot_middleware`] |
-//! | Photon WS auth bridge | [`PhotonAuth`], [`extract_user_key`] |
+//! | Photon WS auth bridge | [`photon_auth`], [`PhotonAuth`], [`extract_user_key`] |
 //! | Profile photo upload / serve | [`files`] |
 //! | Product row → `User` edge | [`lepton_identity`](../lepton_identity/index.html#product-composition) |
 //!

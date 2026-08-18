@@ -6,8 +6,8 @@
 //! `lepton_smtp::EmailEnvelope` and call `auth_services()?.email.send(&envelope)`.
 //! Quiet helpers never log recipient addresses.
 //!
-//! **Owns:** verification / reset send helpers on top of injected email delivery.
-//! **Does not own:** SMTP transport config, Twilio adapters, or template engines.
+//! Sends verification and password-reset mail through the injected email adapter.
+//! SMTP transport config, Twilio adapters, and template engines configure elsewhere.
 //!
 //! # When to call
 //!

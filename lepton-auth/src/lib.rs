@@ -12,6 +12,7 @@
 //! | **Session Backend + middleware** | host | [`Backend`](../lepton_host_adapter/struct.Backend.html), [`session_snapshot_middleware`](../lepton_host_adapter/fn.session_snapshot_middleware.html) | [Host wiring](../lepton_host_adapter/index.html#host-wiring) |
 //! | **Authenticated server fn** | `ssr` | [`require_auth_user`], [`user_valence`] | [Authenticated server fn](#authenticated-server-fn-current-user) |
 //! | **Mount auth UI** | — | [`lepton_auth_ui`](../lepton_auth_ui/index.html), [`actions`], [`paths`] | [Mount `AuthDialog`](../lepton_auth_ui/index.html#mount-authdialog-shell) |
+//! | **Durable delivery** | `ssr` + `boson-delivery` (+ channels) | `delivery` module | [Examples ladder](#examples-ladder) |
 //! | **Verification / reset mail** | `email` | [`email_delivery`] | [`verification_email_envelope`](../lepton_smtp/fn.verification_email_envelope.html) |
 //! | **OTP / TOTP verify** | `email` / `phone` / `totp` | [`factor`] | [`factor` Examples](factor/index.html#examples) |
 //! | **Login MFA** | `ssr` (+ `totp`) | [`session_mfa`], [`actions::signin`] | Step-up (per-op): [UI](../lepton_auth_ui/index.html#step-up-critical-action) |
@@ -125,6 +126,14 @@
 //!     ),
 //! );
 //! ```
+//!
+//! ## Examples ladder
+//!
+//! | Level | Where |
+//! |-------|--------|
+//! | Highlight | [Boot delivery](#boot-delivery-email-only) |
+//! | Mid | `delivery` module — `DeliveryRuntime::install` + enqueue sketch |
+//! | Detailed | `tests/delivery_attempt.rs` (`ssr`, `boson-delivery`, `email`) |
 //!
 //! ## Further reading
 //!

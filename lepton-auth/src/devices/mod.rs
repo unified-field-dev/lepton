@@ -1,12 +1,10 @@
 //! Trusted browser / `WebAuthn` device registration.
 //!
-//! **Owns:** TrustedBrowser confirm-code lifecycle; binding cookie mint/verify for MFA-skip;
-//! `WebAuthn` registration / assertion ceremony (feature `webauthn`); list / revoke;
-//! serializable DTOs for server fns.
-//!
-//! **Does not own:** Google / GitHub OAuth ([`crate::oauth`] / `LinkedIdentity`),
-//! passwordless login, or host enroll UI (Security devices + [`crate::actions::devices`]).
-//! Session MFA orchestration lives in [`crate::session_mfa`].
+//! Manages TrustedBrowser confirm-code lifecycle, binding cookie mint/verify for MFA-skip,
+//! `WebAuthn` registration / assertion ceremony (feature `webauthn`), list / revoke,
+//! and serializable DTOs for server fns. Google / GitHub OAuth ([`crate::oauth`] /
+//! `LinkedIdentity`) and passwordless login are separate; host enroll UI uses Security
+//! devices + [`crate::actions::devices`]. Session MFA orchestration lives in [`crate::session_mfa`].
 //!
 //! # Examples
 //!

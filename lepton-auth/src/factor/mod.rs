@@ -2,9 +2,9 @@
 //!
 //! Channel methods appear when their Cargo features are on (`email`, `phone`, `totp`).
 //!
-//! **Owns:** issue / verify for factor challenges using injected [`crate::services::LeptonAuthServices`].
-//! **Does not own:** Account Settings enroll UI ([`crate::actions::totp`]) or the step-up
-//! modal ([`StepUpDialog`](../lepton_auth_ui/fn.StepUpDialog.html) — mount in the host shell).
+//! Issues and verifies factor challenges through injected [`crate::services::LeptonAuthServices`].
+//! Account Settings TOTP enroll UI lives in [`crate::actions::totp`]; the step-up
+//! modal ([`StepUpDialog`](../lepton_auth_ui/fn.StepUpDialog.html)) mounts in the host shell.
 //!
 //! Login MFA at sign-in uses [`crate::session_mfa`] / [`crate::actions::signin`]. Per-op
 //! step-up for a sensitive mutation uses this module plus the UI dialog.

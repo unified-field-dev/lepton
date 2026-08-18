@@ -1,4 +1,30 @@
 //! Photon WebSocket auth extractor bridging axum-login [`Backend`].
+//!
+//! # Examples
+//!
+//! Pass [`PhotonAuth`] to `photon_axum::apply_ws_routes` so synced Leptos handlers
+//! scope subscriptions to the signed-in user:
+//!
+//! ```rust,ignore
+//! use axum::Router;
+//! use lepton_host_adapter::{photon_auth::PhotonAuth, Backend, session_snapshot_middleware};
+//! use photon_axum::apply_ws_routes;
+//!
+//! let app: Router = Router::new()
+//!     .merge(apply_ws_routes::<PhotonAuth>(/* ws router from photon_leptos */))
+//!     .layer(session_snapshot_middleware)
+//!     .layer(auth_layer);
+//! ```
+//!
+//! Read the subscription key directly when wiring custom Photon handlers:
+//!
+//! ```rust,ignore
+//! use lepton_host_adapter::photon_auth::extract_user_key;
+//!
+//! if let Some(user_id) = extract_user_key(&auth_session) {
+//!     // scope topic to user_id
+//! }
+//! ```
 
 use axum::extract::FromRequestParts;
 use axum_login::AuthUser;

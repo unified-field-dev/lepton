@@ -36,6 +36,24 @@ cargo check -p lepton-auth-ui --target wasm32-unknown-unknown --features hydrate
 cargo leptos end-to-end --project lepton-auth-ui-e2e
 ```
 
+### rustdoc (CI job `quality`, deny warnings)
+
+Workspace gate (same as `.github/workflows/ci.yml`):
+
+```bash
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --features ssr,full
+RUSTDOCFLAGS="-D warnings" cargo doc -p lepton-sms -p lepton-smtp --no-deps --features twilio
+```
+
+Focused package gates (library crates without pulling the full UI graph):
+
+```bash
+RUSTDOCFLAGS="-D warnings" cargo doc -p lepton-auth --features ssr,full --no-deps
+RUSTDOCFLAGS="-D warnings" cargo doc -p lepton-identity --no-deps
+RUSTDOCFLAGS="-D warnings" cargo doc -p lepton-host-adapter --features ssr --no-deps
+RUSTDOCFLAGS="-D warnings" cargo doc -p lepton-test-support --all-features --no-deps
+```
+
 ### leptos-lints (CI job `leptos-lints`)
 
 Needs `cargo-dylint` / `dylint-link` 6.0.1 and toolchain `nightly-2025-05-14`

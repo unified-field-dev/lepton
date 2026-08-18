@@ -1,9 +1,8 @@
 //! Login MFA pending session + complete / skip orchestration.
 //!
-//! **Owns:** half-session pending MFA bag; TOTP / WebAuthn / TrustedBrowser skip →
-//! `auth_session.login` + optional device bind.
-//!
-//! **Does not own:** product sign-in UI, passwordless login, or `SessionSnapshot` fields.
+//! Holds the half-session pending MFA bag and orchestrates TOTP / WebAuthn /
+//! TrustedBrowser skip → `auth_session.login` + optional device bind. Sign-in UI,
+//! passwordless login, and `SessionSnapshot` fields are supplied by the host.
 //!
 //! # Examples
 //!

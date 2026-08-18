@@ -6,11 +6,9 @@
 //! from process environment — build the bundle with [`LeptonAuthServicesBuilder`]
 //! at boot (and optional [`lepton_smtp::EmailServiceBuilder::from_env`] for mail).
 //!
-//! **Owns:** Leptos context injection for delivery adapters + public base URL + optional OAuth /
-//! `WebAuthn` RP config.
-//! **Does not own:** SMTP/SMS adapter crates (`lepton-smtp` / `lepton-sms`), secret
-//! resolution / secrets managers, or OAuth provider HTTP beyond config handoff to
-//! [`crate::oauth`].
+//! Injects Leptos context for delivery adapters, public base URL, and optional OAuth /
+//! `WebAuthn` RP config. SMTP/SMS transport comes from `lepton-smtp` / `lepton-sms`;
+//! secret resolution and OAuth provider HTTP stay outside this module ([`crate::oauth`]).
 //!
 //! Channel fields are compile-time: `email` / `phone` features omit unused adapters.
 //!

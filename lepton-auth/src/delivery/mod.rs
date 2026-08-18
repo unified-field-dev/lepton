@@ -4,9 +4,9 @@
 //! matching channel). Sync [`crate::email_delivery`] remains available when
 //! `boson-delivery` is off.
 //!
-//! **Owns:** [`crate::delivery::DeliveryRuntime`],
-//! [`crate::delivery::record_delivery_attempt`], enqueue façades, Boson tasks.
-//! **Does not own:** SMTP/SMS adapters, Spectra counters, delivery status UI.
+//! Provides [`crate::delivery::DeliveryRuntime`],
+//! [`crate::delivery::record_delivery_attempt`], enqueue façades, and Boson task handlers.
+//! SMTP/SMS adapters, Spectra counters, and delivery status UI integrate at the host.
 //!
 //! # Concern → API
 //!

@@ -11,7 +11,27 @@
 //! | Identity Valence models | [`generated`] |
 //! | Relate a product row to `User` | [Product composition](#product-composition) |
 //! | Hash passwords (Argon2) | [`auth::hash_password`] |
+//! | Signup row ownership | [`ownership::ensure_signup_identity_ownership`] |
 //! | Session / axum-login | [`lepton_host_adapter`](../lepton_host_adapter/index.html) |
+//!
+//! # Concern → API
+//!
+//! | Concern | API |
+//! |---------|-----|
+//! | Valence models / codegen | [`generated`] |
+//! | Router logical DB names | [`embedded_surreal`] |
+//! | Password hashing | [`auth::hash_password`] |
+//! | Signup ownership side effects | [`ownership`], [`side_effects`] |
+//!
+//! ## Storage features
+//!
+//! | Feature | Engine id on [`embedded_surreal::IDENTITY_DEFAULT_STORAGE`] |
+//! |---------|--------------------------------------------------------------|
+//! | `db-sqlite` (default) | `valence::SQLITE_ENGINE_ID` — local / embedded SQLite |
+//! | `db-hybrid` | `valence::HYBRID_ENGINE_ID` — host router with mixed backends |
+//!
+//! Pick one per binary. Worker crates that only need models can disable default
+//! features and omit both when they do not open Valence storage.
 //!
 //! ## Model overview
 //!
@@ -62,6 +82,28 @@
 //!
 //! When the product row is owned by that user, apply `OWNER_BY_USER_FIELD` on the field
 //! or row policies as appropriate. That is a privacy choice, separate from the hop API.
+//!
+//! ## Examples
+//!
+//! Hash a password for persistence (SSR boot or worker signup):
+//!
+//! ```rust
+//! use lepton_identity::auth::hash_password;
+//!
+//! let phc = hash_password("ValidPass123!").expect("hash");
+//! assert!(phc.starts_with("$argon2"));
+//! ```
+//!
+//! Assign founding-user ownership after anonymous signup (library callers pass bare ids):
+//!
+//! ```rust,no_run
+//! use lepton_identity::ownership::ensure_signup_identity_ownership;
+//! use valence::Valence;
+//!
+//! async fn after_signup(valence: &Valence, user_bare: &str, account_bare: &str) -> valence::Result<()> {
+//!     ensure_signup_identity_ownership(valence, user_bare, account_bare, &[]).await
+//! }
+//! ```
 
 /// Argon2 password hashing shared by SSR and worker crates.
 pub mod auth;

@@ -1,13 +1,13 @@
 //! Leptos auth UI: dialogs and embeddable forms composed with Orbital.
 //!
-//! Server functions and library APIs live in [`lepton_auth`]. This crate holds
-//! only the presentation layer so hosts that need OAuth/factors alone do not
-//! pull Orbital.
+//! Server functions and library APIs live in [`lepton_auth`]. This crate supplies
+//! Leptos components and Orbital layout so hosts that need OAuth/factors alone do
+//! not pull UI dependencies.
 //!
 //! Auth UI `#[server]` functions in [`lepton_auth::actions`] register through
 //! Leptos `generate_route_list` / `leptos_routes_with_context`. You do not mount
 //! them as separate axum handlers. Session chrome (`get_session` /
-//! `init_auth_resource`) is provided by the host product layer.
+//! `init_auth_resource`) wires in from the host app shell.
 //!
 //! # Organized by task
 //!

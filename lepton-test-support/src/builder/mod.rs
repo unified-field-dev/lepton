@@ -1,13 +1,8 @@
 //! Fluent [`TestUserBuilder`] for shortcut identity seeds (harness / integ tests).
 //!
-//! # Owns
-//!
-//! Direct Valence writes that put a user in a known state for product / UI tests.
-//!
-//! # Does not own
-//!
-//! The production signup pipeline (`lepton_auth::signup_api` / `lepton_e2e::flow`).
-//! Use those when the test asserts signup itself.
+//! Writes users directly into Valence for known-state product / UI tests. For tests
+//! that exercise signup itself, use the production pipeline (`lepton_auth::signup_api` /
+//! `lepton_e2e::flow`).
 //!
 //! # Examples
 //!

@@ -1,16 +1,16 @@
 # lepton
 
-Thin user-domain contract crate — re-exports generated SSR bindings from
-`lepton-host-adapter` behind the `ssr` feature.
+SSR identity and token model bindings for Unified Field hosts. Enable `ssr` to use
+`lepton::generated` (`User`, tokens, and related Valence shapes).
 
 ```toml
 lepton = { git = "https://github.com/unified-field-dev/lepton", package = "lepton", default-features = false, features = ["ssr"] }
 ```
 
 ```rust
-// SSR-enabled crate:
-use lepton::generated::*;
+use lepton::generated::User;
 ```
 
-Hydrate / default builds stay minimal. Prefer depending on `lepton-identity` or
-`lepton-host-adapter` directly when you need a clearer boundary.
+Default / hydrate builds stay empty. Depend on `lepton-identity` for ownership helpers
+without the host adapter graph, or `lepton-host-adapter` when you wire session and token
+schemas yourself.
