@@ -40,6 +40,9 @@ hydrate = [
 ]
 ssr = [
     "orbital-primitives/ssr",
+    "orbital-base-components/ssr",
+    "orbital-core-components/ssr",
+    "orbital-motion/ssr",
     "leptos/ssr",
     "leptos_router/ssr",
     "lepton-auth/ssr",

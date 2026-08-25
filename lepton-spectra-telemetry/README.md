@@ -3,6 +3,8 @@
 Spectra ops counters and failure events for Lepton delivery and auth funnels.
 Workspace member of [`lepton`](../); depends on `uf-spectra`.
 
+**Source of truth for teaching:** `cargo doc -p lepton-spectra-telemetry --open`.
+
 ```toml
 lepton-spectra-telemetry = { path = "../lepton-spectra-telemetry" }
 # Or enable emit from adapters / auth library:
@@ -11,57 +13,35 @@ lepton-spectra-telemetry = { path = "../lepton-spectra-telemetry" }
 # lepton-auth = { path = "../lepton-auth", features = ["ssr", "spectra"] }
 ```
 
-```rust,ignore
-use lepton_spectra_telemetry::{
-    record_email_send, record_signin, AuthFactor, AuthOutcome, EmailSendOutcome, SigninStage,
-};
+## Features
 
-// Host must boot Spectra first (e.g. spectra_uf_embedded::install_embedded_sqlite).
-record_email_send("smtp", EmailSendOutcome::Success);
-record_signin(SigninStage::Password, AuthOutcome::NeedsMfa, "none", AuthFactor::None);
+- **Delivery counters** — `record_email_send`, `record_sms_send`
+- **Auth funnel counters** — `record_signin`, `record_oauth`, and related helpers
+- **Failure events** — `log_auth_failure` with bounded `reason_class` tokens
+
+## Getting started
+
+Boot Spectra in the host, then record:
+
+```rust,ignore
+use lepton_spectra_telemetry::{record_email_send, EmailSendOutcome};
+
+record_email_send("noop", EmailSendOutcome::Success);
 ```
 
-## Catalog
-
-`store` is `lepton`. Labels are ops-id only — closed enums / `reason_class` tokens.
-Emails, phones, user ids, passwords, OTPs, tokens, challenge ids, bodies, and free-form
-error text are never recorded. Unknown tokens map to `unknown` / `none`.
-
-| Name | Kind | Labels / fields |
-|------|------|-----------------|
-| `lepton_email_send` | counter | `driver`, `outcome` |
-| `lepton_sms_send` | counter | `driver`, `outcome` |
-| `lepton_signup` | counter | `outcome`, `error_class` |
-| `lepton_signin` | counter | `stage`, `outcome`, `error_class`, `factor` |
-| `lepton_oauth` | counter | `provider`, `intent`, `stage`, `outcome`, `error_class` |
-| `lepton_verify` | counter | `channel`, `stage`, `outcome`, `error_class` |
-| `lepton_password_reset` | counter | `stage`, `outcome`, `error_class` |
-| `lepton_totp` | counter | `operation`, `outcome`, `error_class` |
-| `lepton_device` | counter | `device_kind`, `operation`, `outcome`, `error_class` |
-| `lepton_contact` | counter | `channel`, `operation`, `outcome`, `error_class` |
-| `lepton_account` | counter | `operation`, `outcome`, `error_class` |
-| `lepton_identity_delete` | counter | `operation`, `outcome`, `error_class` |
-| `lepton_step_up` | counter | `path`, `outcome`, `error_class` |
-| `lepton_auth_failure` | event | `flow`, `operation`, `error_class`, `provider`, `channel` |
-
-## Concern → API
-
-| Concern | API |
-|---------|-----|
-| Delivery emit | [`record_email_send`], [`record_sms_send`] |
-| Auth funnel emit | [`record_signup`], [`record_signin`], [`record_oauth`], … |
-| Failure events | [`log_auth_failure`] |
-| Typed helpers | [`helpers`] |
-| Topics | [`topics`] |
-
-There is no process-wide install switch. Boot Spectra in the host, then call the helpers
-or enable the `spectra` feature on `lepton-smtp` / `lepton-sms` / `lepton-auth`.
-
-## Examples
+Runnable smoke (boots mem Spectra and queries the counter):
 
 ```bash
 cargo run -p lepton-spectra-telemetry --example email_send_record_smoke
 ```
+
+Labels are ops-id only. Emails, phones, user ids, passwords, OTPs, tokens, challenge
+ids, bodies, and free-form error text are never recorded.
+
+## Feature flags
+
+This crate has no Cargo feature flags. Adapter emit uses `spectra` on
+`lepton-smtp` / `lepton-sms` / `lepton-auth`.
 
 ## Verify
 

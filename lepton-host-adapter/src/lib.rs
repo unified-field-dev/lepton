@@ -1,27 +1,51 @@
-//! Token lifecycle schemas + axum-login backend bridging `lepton-identity` to higgs.
+//! Axum-login session backend and token schemas for SSR hosts.
 //!
-//! All modules require the `ssr` feature: this crate has no client-side surface.
+//! Bridges [`lepton_identity`](../lepton_identity/index.html) users to higgs via
+//! [`Backend`] and [`session_snapshot_middleware`]. All modules require the `ssr`
+//! feature; there is no client-side surface.
 //!
-//! # Host recipes
+//! # Features
 //!
-//! | Recipe | Start here |
-//! |--------|------------|
-//! | Axum-login backend + session user | [`Backend`], [`Credentials`], [`User`] |
-//! | Mirror session into higgs | [`session_snapshot_middleware`] |
-//! | Photon WS auth bridge | [`photon_auth`], [`PhotonAuth`], [`extract_user_key`] |
-//! | Profile photo upload / serve | [`files`] |
-//! | Product row → `User` edge | [`lepton_identity`](../lepton_identity/index.html#product-composition) |
-//!
-//! Typical host wiring: register [`Backend`] with `axum-login`, layer
-//! [`session_snapshot_middleware`], and read [`AuthSession`] /
-//! `higgs_identity::SessionSnapshot` from request extensions. Runnable smoke:
-//! `cargo run -p lepton-host-adapter --example axum_session_snapshot --features ssr`.
+//! - **Axum-login backend** — Provides [`Backend`], [`Credentials`], and [`User`] for
+//!   email/password sessions when the host owns login cookies
+//!   ([Host wiring](#host-wiring)).
+//! - **Session snapshot** — Mirrors the logged-in session into higgs via
+//!   [`session_snapshot_middleware`] so Leptos/SSR code can read identity from
+//!   extensions ([Host wiring](#host-wiring)).
+//! - **Photon WS auth** — Authenticates photon-axum WebSocket upgrades with
+//!   [`PhotonAuth`] / [`extract_user_key`] when live channels need the same Backend
+//!   ([Host wiring](#host-wiring)).
+//! - **Token models** — Holds password-reset and verification schemas in [`generated`]
+//!   for SSR token lifecycle ([Host wiring](#host-wiring)).
+//! - **Profile files** — Serves profile photo upload/download through [`files`] when
+//!   the product stores avatar bytes ([Host wiring](#host-wiring)).
+//! - **Product → User** — Documents hopping from a product Valence edge to identity
+//!   `User` on [`lepton_identity`](../lepton_identity/index.html#product-composition).
 //!
 //! Token / factor Valence models live in [`generated`] (schema inventory and sealed
-//! fields on each type); see [`SECURITY.md`](https://github.com/unified-field-dev/lepton/blob/main/SECURITY.md).
-//! Router logical-name constants: [`embedded_surreal`].
+//! fields on each type); see workspace `SECURITY.md`. Router logical-name constants:
+//! [`embedded_surreal`].
 //!
-//! # Host wiring
+//! # Getting started
+//!
+//! ## Host wiring
+//!
+//! Provides axum-login plus a higgs session snapshot on the SSR router so authenticated
+//! requests carry identity into Leptos and Photon. Wire this once at host boot when the
+//! product owns cookies and login.
+//!
+//! Prerequisites: `lepton-host-adapter` with `features = ["ssr"]`, a shared
+//! higgs Valence factory, and a session store. Set `Secure` / `HttpOnly` / `SameSite` on
+//! the session cookie (see workspace `SECURITY.md`).
+//!
+//! 1. Build [`Backend`] with the same Valence factory Arc higgs uses.
+//! 2. Layer `AuthManagerLayer` + [`session_snapshot_middleware`] on the axum `Router`.
+//! 3. Authenticated requests expose `Extension<higgs_identity::SessionSnapshot>`.
+//! 4. Confirm with the runnable example (prints `OK — login → SessionSnapshot`).
+//!
+//! Errors: missing layers leave requests without a snapshot; cookie flags wrong for
+//! the environment break browser sessions. Next: mount Leptos / auth UI routes on the
+//! same `Router`.
 //!
 //! ```rust,ignore
 //! use std::sync::Arc;
@@ -35,7 +59,6 @@
 //! // Share the same valence factory Arc with HiggsConfig.
 //! let higgs: Arc<HiggsConfig> = /* host boot */;
 //! let backend = Backend::new(Arc::clone(higgs.valence_factory()));
-//! // Hosts must set Secure / HttpOnly / SameSite on the session cookie (see SECURITY.md).
 //! let session_layer = SessionManagerLayer::new(MemoryStore::default());
 //! let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 //!
@@ -43,11 +66,31 @@
 //!     // .route(...) — mount Leptos routes / auth UI here
 //!     .layer(middleware::from_fn(session_snapshot_middleware))
 //!     .layer(auth_layer);
-//! // `Extension<higgs_identity::SessionSnapshot>` is available to higgs for
-//! // authenticated requests; anonymous requests simply lack the extension.
+//! // Authenticated requests carry Extension<higgs_identity::SessionSnapshot>.
+//! println!("OK — login → SessionSnapshot");
 //! ```
+//!
+//! Runnable: `cargo run -p lepton-host-adapter --example axum_session_snapshot --features ssr`
+//!
+//! Success stdout: `axum_session_snapshot: OK — login → SessionSnapshot`.
+//!
+//! # Feature flags
+//!
+//! | Feature | Effect |
+//! |---------|--------|
+//! | `ssr` | Backend, middleware, Photon auth, files, and [`generated`] token models |
+//! | `db-sqlite` (default) | Forwarded to `lepton-identity` / Valence SQLite |
+//! | `db-hybrid` | Forwarded hybrid engine for host routers |
+//!
+//! # Further reading
+//!
+//! - [Host wiring](#host-wiring) — first-success session path
+//! - [`Backend`] / [`session_snapshot_middleware`] — login + snapshot contracts
+//! - [`generated`] — token and identity Valence models
+//! - [`lepton_identity`](../lepton_identity/index.html) — password hash and ownership helpers
+//! - [`lepton_auth`](../lepton_auth/index.html) — server functions and delivery
 
-/// Token lifecycle Valence models, plus re-exports of `lepton-identity`'s core models
+/// Token lifecycle Valence models and identity table types used by SSR hosts
 /// (see the [crate-level walkthrough](self)).
 #[cfg(feature = "ssr")]
 pub mod generated;

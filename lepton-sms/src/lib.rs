@@ -7,12 +7,20 @@
 //!
 //! # Features
 //!
-//! - **Builder-first delivery** — boot [`SmsServiceBuilder`], inject [`SmsDeliveryService`], send
-//! - **E.164 validation** — [`validate_e164`] on send paths
-//! - **Swappable adapters** — Noop, Test, HTTP capture, optional Twilio Messages / Verify ([Choose a delivery backend](#choose-a-delivery-backend))
-//! - **Typed outcomes** — [`SmsDeliveryReceipt`], [`SmsDeliveryError`]
-//! - **Safe tracing** — adapters omit E.164, body, OTP, and credentials from tracing fields
-//! - **Optional Spectra** — `lepton_sms_send` counters when the `spectra` Cargo feature is enabled
+//! - **Builder-first delivery** — Provides a single boot path: build once with
+//!   [`SmsServiceBuilder`], inject [`SmsDeliveryService`], then send. Start with
+//!   [Noop](#noop) for local and CI sends without a network.
+//! - **E.164 validation** — Validates destination numbers on send so bad addresses fail
+//!   closed before the adapter runs ([Noop](#noop)).
+//! - **Swappable adapters** — Lets hosts pick Noop, Test, HTTP capture, or Twilio
+//!   Messages / Verify without changing call sites
+//!   ([Choose a delivery backend](#choose-a-delivery-backend)).
+//! - **Typed outcomes** — Returns [`SmsDeliveryReceipt`] on success or [`SmsDeliveryError`]
+//!   on failure so callers can branch and retry ([Handle outcomes](#handle-outcomes)).
+//! - **Safe tracing** — Keeps E.164, body, OTP, and credentials out of adapter log fields
+//!   when diagnosing delivery ([Noop](#noop)).
+//! - **Optional Spectra** — Emits `lepton_sms_send` counters when the `spectra` Cargo
+//!   feature is on, for ops dashboards after send ([Noop](#noop)).
 //!
 //! # Getting started
 //!
@@ -62,8 +70,9 @@
 //!
 //! ## Test
 //!
-//! Records envelopes in memory for assertions. Prefer [`SmsServiceBuilder::adapter`] with a
-//! shared [`TestSmsAdapter`] when tests need the same instance for `recorded()`.
+//! Provides an in-memory SMS adapter for unit tests so callers can assert on
+//! `recorded()` envelopes without a network. Prefer [`SmsServiceBuilder::adapter`] with a
+//! shared [`TestSmsAdapter`] when tests need the same instance.
 //!
 //! Prerequisites: none. Destination must be E.164.
 //!
@@ -133,7 +142,8 @@
 //!
 //! ## Twilio Messages
 //!
-//! Live SMS through Twilio Messages REST. Requires the `twilio` Cargo feature.
+//! Provides live SMS through Twilio Messages REST when the product must reach real
+//! handsets. Requires the `twilio` Cargo feature.
 //!
 //! Prerequisites: Account SID, From number, and either API key SID+secret or Auth Token.
 //! Prefer API key (`SK…`) + secret.
@@ -175,9 +185,9 @@
 //!
 //! ## Twilio Verify
 //!
-//! Live OTP delivery through Twilio Verify with `CustomCode`. Prefer this for OTP flows
-//! when Valence (or the host) still verifies the code. Requires the `twilio` Cargo feature
-//! and Custom Verification Code enabled on the Verify Service.
+//! Provides live OTP delivery through Twilio Verify with `CustomCode` when Valence (or
+//! the host) still verifies the code. Requires the `twilio` Cargo feature and Custom
+//! Verification Code enabled on the Verify Service.
 //!
 //! Prerequisites: Verify Service SID plus Twilio credentials; [`SmsEnvelope::otp_code`] must
 //! be 4..=10 characters.

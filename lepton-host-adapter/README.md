@@ -1,33 +1,44 @@
 # lepton-host-adapter
 
-Axum-login backend and token schemas that bridge **lepton-identity** to **higgs-identity** / **higgs-host**.
+Axum-login session backend and token schemas for SSR hosts. Bridges
+**lepton-identity** users to higgs via `Backend` and `session_snapshot_middleware`.
+
+**Source of truth for teaching:** `cargo doc -p lepton-host-adapter --features ssr --open`.
 
 ```toml
 lepton-host-adapter = { git = "https://github.com/unified-field-dev/lepton", package = "lepton-host-adapter", default-features = false, features = ["ssr"] }
 ```
 
-```rust
-// Backend + session_snapshot_middleware (+ optional PhotonAuth) for SSR hosts.
-// Password-reset and email-verification schemas live alongside the adapter.
+## Features
+
+- **Axum-login backend** — `Backend`, `Credentials`, `User`
+- **Session snapshot** — `session_snapshot_middleware` into higgs
+- **Photon WS auth** — `PhotonAuth` / `extract_user_key`
+- **Token models** — reset / verification schemas in `generated`
+
+## Getting started
+
+```bash
+CARGO_BUILD_JOBS=1 cargo run -p lepton-host-adapter --example axum_session_snapshot --features ssr
 ```
 
-## About
+Success stdout: `axum_session_snapshot: OK — login → SessionSnapshot`.
 
-- Session snapshots without importing concrete user models into higgs-host
-- Token / reset / verification Valence schemas
-- Prefer the [lepton](https://github.com/unified-field-dev/lepton) workspace when you also need auth UI or SMTP
+See also [`examples/README.md`](examples/README.md).
 
-## Examples
+## Feature flags
 
-Axum login → `SessionSnapshot` smoke (SQLite `:memory:`):
-[`examples/README.md`](examples/README.md).
+| Feature | Effect |
+|---------|--------|
+| `ssr` | Backend, middleware, Photon auth, files, generated models |
+| `db-sqlite` (default) | SQLite via `lepton-identity` |
+| `db-hybrid` | Hybrid engine for host routers |
 
 ## Verify
 
 ```bash
 export CARGO_BUILD_JOBS=1
 cargo check -p lepton-host-adapter --features ssr
-CARGO_BUILD_JOBS=1 cargo run -p lepton-host-adapter --example axum_session_snapshot --features ssr
 ```
 
 ## License

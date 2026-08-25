@@ -1,29 +1,38 @@
 //! Lepton CI e2e + interactive live Twilio / TOTP / Google OAuth harness.
 //!
-//! # Organized by task
+//! # Features
 //!
-//! | Task | Start here |
-//! |------|------------|
-//! | Boot in-memory Valence | [`boot::boot_valence`] |
-//! | Valence + services (+ Boson) | [`boot::boot_lab`] |
-//! | Noop email + Test SMS (sync only) | [`boot::boot_services_test`] |
-//! | Live Twilio services | `boot::boot_services_twilio` (`live-twilio`) |
-//! | Full signup → confirm flow | [`flow::run_signup_verify_flow`] |
-//! | Device + TOTP challenge | [`flow::run_device_totp_challenge_flow`] |
-//! | OAuth signup → login | [`oauth_flow::run_oauth_signup_login_flow`] |
-//! | Mock OAuth codes | [`oauth_flow::MockOAuthCodeSource`] |
-//! | Live Google callback | [`oauth_callback::LocalhostOAuthCodeSource`] |
-//! | Test TOTP codes | [`flow::TestTotpCodeSource`] |
-//! | Live authenticator codes | [`flow::StdinTotpCodeSource`] |
-//! | Parse email token paste | [`parse::email_token_from_input`] |
-//! | Parse otpauth secret | [`parse::totp_secret_from_otpauth_uri`] |
-//! | Interactive Twilio CLI | `lepton-live-verify` bin (`UF_LEPTON_LIVE_TWILIO=1`) |
-//! | Interactive TOTP CLI | `lepton-live-totp` bin (`UF_LEPTON_LIVE_TOTP=1`) |
-//! | Interactive Google OAuth CLI | `lepton-live-oauth` bin (`UF_LEPTON_LIVE_OAUTH=1`) |
-//! | SMS HTTP capture sink | [`sms_sink`] / `lepton-sms-sink` bin (`:8099`) |
-//! | Mock OIDC sidecar | [`mock_oidc`] / `lepton-mock-oidc` bin (`:5556`) |
+//! - **In-memory lab boot** — Builds Valence and test delivery services for CI without
+//!   Docker. Start with [`boot::boot_lab`] on the [CI e2e](#ci-e2e) path.
+//! - **Signup → confirm** — Runs [`flow::run_signup_verify_flow`] when you need a full
+//!   signup through confirmation under Noop/Test delivery ([CI e2e](#ci-e2e)).
+//! - **Device + TOTP** — Exercises [`flow::run_device_totp_challenge_flow`] after signup
+//!   when covering trusted-device and authenticator enrollment ([CI e2e](#ci-e2e)).
+//! - **OAuth flows** — Drives [`oauth_flow::run_oauth_signup_login_flow`] with
+//!   [`oauth_flow::MockOAuthCodeSource`] for mock provider coverage on the same lab
+//!   ([CI e2e](#ci-e2e)).
+//! - **Live CLIs** — Provides interactive Twilio, authenticator TOTP, and Google/GitHub
+//!   OAuth bins when validating real providers outside CI ([Live CLIs](#live-clis)).
+//! - **Lab sidecars** — Includes [`sms_sink`] and [`mock_oidc`] for HTTP capture and mock
+//!   OIDC during live or local harness runs ([Live CLIs](#live-clis)).
+//!
+//! # Getting started
 //!
 //! ## CI e2e
+//!
+//! CI e2e boots an in-memory lab and runs signup → confirm (and optional device/TOTP)
+//! under Noop/Test delivery so coverage stays Docker-free. Use this path in automated
+//! test binaries.
+//!
+//! Prerequisites: this crate on the test binary; Noop/Test delivery via [`boot::boot_lab`].
+//!
+//! 1. [`boot::boot_lab`] for Valence + services.
+//! 2. [`flow::run_signup_verify_flow`] with a [`flow::TestCodeSource`].
+//! 3. Assert `signup.confirmed`.
+//! 4. Optional: [`flow::run_device_totp_challenge_flow`] and assert device/TOTP flags.
+//!
+//! Errors: lab boot / flow helpers return [`LiveVerifyError`]. Next: add OAuth mock
+//! flows or move to [Live CLIs](#live-clis) for real providers.
 //!
 //! ```rust,ignore
 //! use lepton_e2e::flow::{
@@ -62,12 +71,37 @@
 //!
 //! ## Live CLIs
 //!
-//! - Twilio email/SMS: `lepton-live-verify` (`UF_LEPTON_LIVE_TWILIO=1`) — see crate `README.md`.
-//! - Google Authenticator TOTP: `lepton-live-totp` (`UF_LEPTON_LIVE_TOTP=1`) — test user setup,
-//!   prints `otpauth://` URI, stdin enroll + challenge codes. Never run in CI.
-//! - Google / GitHub OAuth signup/login: `lepton-live-oauth` (`UF_LEPTON_LIVE_OAUTH=1`,
-//!   `UF_OAUTH_PROVIDER=google|github`, feature `live-oauth`) — loopback callback + live
-//!   token exchange. Never run in CI.
+//! Live CLIs drive real Twilio, authenticator apps, and OAuth providers interactively.
+//! Use them for manual provider validation; never run these bins in CI.
+//!
+//! Prerequisites: matching env gates and Cargo features (`live-twilio`, `live-oauth`, …).
+//! See the crate `README.md` for credential setup.
+//!
+//! 1. Export the gate env var for the CLI you want.
+//! 2. `cargo run -p lepton-e2e --bin <name> --features …`.
+//! 3. Follow stdin prompts; success prints flow completion lines.
+//!
+//! Errors: missing env fails closed before interactive prompts. Next: CI path above
+//! for Docker-free coverage.
+//!
+//! ```rust,ignore
+//! // Gates (set in the shell before cargo run):
+//! //   UF_LEPTON_LIVE_TWILIO=1  → bin lepton-live-verify  (--features live-twilio)
+//! //   UF_LEPTON_LIVE_TOTP=1    → bin lepton-live-totp
+//! //   UF_LEPTON_LIVE_OAUTH=1   → bin lepton-live-oauth   (--features live-oauth)
+//! assert!(std::env::var("UF_LEPTON_LIVE_TWILIO").is_ok());
+//! // cargo run -p lepton-e2e --bin lepton-live-verify --features live-twilio
+//! ```
+//!
+//! Sidecars: [`sms_sink`] / `lepton-sms-sink`, [`mock_oidc`] / `lepton-mock-oidc`.
+//!
+//! # Feature flags
+//!
+//! | Feature | Effect |
+//! |---------|--------|
+//! | `boson-delivery` (default) | Durable delivery wiring in lab boot |
+//! | `live-twilio` | Live Twilio boot helpers + CLI paths |
+//! | `live-oauth` / `live-oauth-google` / `live-oauth-github` | Live OAuth CLI paths |
 
 // `#[async_trait]` marks its generated boxed-future returns `#[must_use]`, which trips
 // `double_must_use` on trait methods returning `Result`. This crate does not inherit the

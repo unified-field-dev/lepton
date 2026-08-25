@@ -1,23 +1,40 @@
 # lepton-identity
 
-Leptos-free Valence models and helpers for host identity: users, accounts, memberships, and related profile material. Codegen runs from `schemas/` via `build.rs`; password hashing lives in `src/auth.rs`.
+Identity Valence models and Argon2 password hashing for headless and SSR hosts.
+Generated tables ship without Leptos so workers and adapters share one schema surface.
+
+**Source of truth for teaching:** `cargo doc -p lepton-identity --open` (crate root).
 
 ```toml
 lepton-identity = { git = "https://github.com/unified-field-dev/lepton", package = "lepton-identity" }
 ```
 
+## Features
+
+- **Identity models** — `generated` Valence types for users, accounts, contacts, devices
+- **Password hashing** — `auth::hash_password` (Argon2 PHC)
+- **Signup ownership** — `ownership::ensure_signup_identity_ownership`
+- **Product composition** — hop from a product row to `User`
+
+## Getting started
+
 ```rust
 use lepton_identity::auth::hash_password;
-// Generated User / Account / membership models from schemas/
+
+let phc = hash_password("ValidPass123!").expect("hash");
+assert!(phc.starts_with("$argon2"));
 ```
 
-## About
+## Feature flags
 
-- Generated identity schemas without pulling Leptos
-- `hash_password` and auth primitives for headless workers
-- Compose with `lepton-host-adapter`, higgs, and higgs-host for sessions
+| Feature | Effect |
+|---------|--------|
+| `db-sqlite` (default) | Embedded SQLite engine id |
+| `db-hybrid` | Hybrid engine for host routers |
+| `test-utils` | Fault-injection hooks for contract tests |
 
-Full auth UI and SMTP live in the [lepton](https://github.com/unified-field-dev/lepton) workspace root.
+Session / axum-login wiring lives in `lepton-host-adapter`. Full auth UI and SMTP live in
+the [lepton](https://github.com/unified-field-dev/lepton) workspace.
 
 ## Verify
 

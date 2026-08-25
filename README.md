@@ -28,13 +28,15 @@ provide_auth_services(Arc::new(
 ))?;
 
 // Later, in a server fn:
-let _ = send_verification_token_email(
+let receipt = send_verification_token_email(
     "alex@example.com",
     Some("Alex Rivera"),
     &token_id,
     VerificationEmailFlow::Signup,
 )
 .await?;
+// Observable: receipt / Ok from the injected adapter (see lepton-auth Getting started).
+let _ = receipt;
 ```
 
 ## Getting started

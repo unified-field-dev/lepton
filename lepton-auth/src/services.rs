@@ -52,7 +52,7 @@
 //!
 //! # Further reading
 //!
-//! Crate-root Host wiring / Host recipes. Runnable SMTP smoke:
+//! Crate-root [Boot delivery](crate#boot-delivery-email-only). Runnable SMTP smoke:
 //! `examples/auth_flows_noop_smtp` (envelopes + adapters; does not call
 //! [`provide_auth_services`]).
 

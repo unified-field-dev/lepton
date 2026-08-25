@@ -1,37 +1,47 @@
-//! Leptos-free identity models and password hashing for Unified Field apps.
+//! Identity Valence models and Argon2 password hashing for headless and SSR hosts.
 //!
-//! Valence schemas/codegen for core identity tables (`user`, `account`,
-//! `user_profile`, memberships, contacts, devices) so worker binaries and other
-//! headless crates can depend on them without pulling Leptos.
+//! Generated tables (`user`, `account`, memberships, contacts, devices) ship without Leptos so
+//! workers and adapters can share one schema surface. Hash passwords with [`auth::hash_password`],
+//! assign signup ownership with [`ownership`], then wire sessions in
+//! [`lepton_host_adapter`](../lepton_host_adapter/index.html).
 //!
-//! # Host recipes
+//! # Features
 //!
-//! | Recipe | Start here |
-//! |--------|------------|
-//! | Identity Valence models | [`generated`] |
-//! | Relate a product row to `User` | [Product composition](#product-composition) |
-//! | Hash passwords (Argon2) | [`auth::hash_password`] |
-//! | Signup row ownership | [`ownership::ensure_signup_identity_ownership`] |
-//! | Session / axum-login | [`lepton_host_adapter`](../lepton_host_adapter/index.html) |
+//! - **Identity models** — Exposes [`generated`] Valence types for users, accounts,
+//!   contacts, and devices so workers and hosts share one schema surface
+//!   ([Model overview](#model-overview)).
+//! - **Password hashing** — Provides Argon2 PHC strings from [`auth::hash_password`]
+//!   when persisting credentials at signup or reset ([Hash a password](#hash-a-password)).
+//! - **Signup ownership** — Assigns the founding user with
+//!   [`ownership::ensure_signup_identity_ownership`] after anonymous signup creates
+//!   bare ids ([Signup ownership](#signup-ownership)).
+//! - **Product composition** — Lets a product row hop to [`generated::User`] when the
+//!   schema points at Lepton `user` ([Product composition](#product-composition)).
+//! - **Storage constants** — Names router logical DBs in [`embedded_surreal`] for
+//!   host Valence wiring ([Model overview](#model-overview)).
+//! - **Session / axum-login** — Points hosts at session boot on
+//!   [`lepton_host_adapter`](../lepton_host_adapter/index.html#host-wiring) when login
+//!   cookies and higgs snapshots are required.
 //!
-//! # Concern → API
+//! # Getting started
 //!
-//! | Concern | API |
-//! |---------|-----|
-//! | Valence models / codegen | [`generated`] |
-//! | Router logical DB names | [`embedded_surreal`] |
-//! | Password hashing | [`auth::hash_password`] |
-//! | Signup ownership side effects | [`ownership`], [`side_effects`] |
+//! ## Hash a password
 //!
-//! ## Storage features
+//! Provides Argon2 PHC password hashes for signup and reset so workers and SSR hosts
+//! persist comparable credentials.
 //!
-//! | Feature | Engine id on [`embedded_surreal::IDENTITY_DEFAULT_STORAGE`] |
-//! |---------|--------------------------------------------------------------|
-//! | `db-sqlite` (default) | `valence::SQLITE_ENGINE_ID` — local / embedded SQLite |
-//! | `db-hybrid` | `valence::HYBRID_ENGINE_ID` — host router with mixed backends |
+//! Prerequisites: none beyond this crate.
 //!
-//! Pick one per binary. Worker crates that only need models can disable default
-//! features and omit both when they do not open Valence storage.
+//! 1. Call [`auth::hash_password`] with the plaintext password.
+//! 2. Persist the returned PHC string on the user row.
+//! 3. Assert the string starts with `$argon2` (or verify later with Argon2).
+//!
+//! ```rust
+//! use lepton_identity::auth::hash_password;
+//!
+//! let phc = hash_password("ValidPass123!").expect("hash");
+//! assert!(phc.starts_with("$argon2"));
+//! ```
 //!
 //! ## Model overview
 //!
@@ -58,52 +68,63 @@
 //! pattern host-adapter token schemas use). After codegen, hop with the instance method
 //! `get_user(&valence)` (and `user_thing()` for the raw [`RecordId`](valence::RecordId)).
 //!
-//! ```text
-//! // In your product schema (valence_schema!):
-//! fields: [
-//!     user: {
-//!         r#type: FieldType::Record("user"),
-//!         required: true,
-//!     },
-//! ],
-//! connections: [
-//!     user: {
-//!         table: "user",
-//!         cardinality: HasOne,
-//!         required: true,
-//!         on_delete: Cascade, // or Restrict — product choice
-//!         model: "lepton_identity::generated::User",
-//!     },
-//! ]
+//! Prerequisites: product schema codegen that emits the `get_user` hop; a loaded product
+//! row and Valence handle. Errors: Valence load failures bubble from `get_user`.
+//! Next: apply `OWNER_BY_USER_FIELD` when the product row is owned by that user (privacy
+//! choice, separate from the hop API).
 //!
-//! // After codegen, on a loaded row:
-//! // let user = order.get_user(&valence).await?;
+//! ```rust,ignore
+//! // Schema sketch (valence_schema!): FieldType::Record("user") + HasOne connection
+//! // model: "lepton_identity::generated::User"
+//! use valence::Valence;
+//!
+//! async fn load_owner(order: &Order, valence: &Valence) -> valence::Result<()> {
+//!     let user = order.get_user(valence).await?;
+//!     let expected = "user:demo";
+//!     assert_eq!(user.id().to_string(), expected);
+//!     Ok(())
+//! }
 //! ```
 //!
-//! When the product row is owned by that user, apply `OWNER_BY_USER_FIELD` on the field
-//! or row policies as appropriate. That is a privacy choice, separate from the hop API.
+//! ## Signup ownership
 //!
-//! ## Examples
+//! After anonymous signup creates bare user and account ids, call
+//! [`ownership::ensure_signup_identity_ownership`] so the founding user owns the account.
+//! On success the function returns `Ok(())`; Valence errors surface as
+//! [`valence::Result`].
 //!
-//! Hash a password for persistence (SSR boot or worker signup):
-//!
-//! ```rust
-//! use lepton_identity::auth::hash_password;
-//!
-//! let phc = hash_password("ValidPass123!").expect("hash");
-//! assert!(phc.starts_with("$argon2"));
-//! ```
-//!
-//! Assign founding-user ownership after anonymous signup (library callers pass bare ids):
+//! Prerequisites: bare user and account ids already inserted. Next: continue signup
+//! confirmation / session creation in the host.
 //!
 //! ```rust,no_run
 //! use lepton_identity::ownership::ensure_signup_identity_ownership;
 //! use valence::Valence;
 //!
 //! async fn after_signup(valence: &Valence, user_bare: &str, account_bare: &str) -> valence::Result<()> {
-//!     ensure_signup_identity_ownership(valence, user_bare, account_bare, &[]).await
+//!     let result = ensure_signup_identity_ownership(valence, user_bare, account_bare, &[]).await;
+//!     assert!(matches!(result, Ok(())));
+//!     result
 //! }
 //! ```
+//!
+//! # Feature flags
+//!
+//! | Feature | Engine id on [`embedded_surreal::IDENTITY_DEFAULT_STORAGE`] |
+//! |---------|--------------------------------------------------------------|
+//! | `db-sqlite` (default) | `valence::SQLITE_ENGINE_ID` — local / embedded SQLite |
+//! | `db-hybrid` | `valence::HYBRID_ENGINE_ID` — host router with mixed backends |
+//! | `test-utils` | Fault-injection hooks for side-effect contract tests |
+//!
+//! Pick one storage feature per binary. Worker crates that only need models can disable
+//! default features and omit both when they do not open Valence storage.
+//!
+//! # Further reading
+//!
+//! - [Hash a password](#hash-a-password) / [Product composition](#product-composition) / [Signup ownership](#signup-ownership)
+//! - [`generated`] — Valence identity models
+//! - [`auth::hash_password`] — Argon2 PHC helper
+//! - [`ownership`] / [`side_effects`] — signup ownership and mutation hooks
+//! - [`lepton_host_adapter`](../lepton_host_adapter/index.html) — axum-login session bridge
 
 /// Argon2 password hashing shared by SSR and worker crates.
 pub mod auth;

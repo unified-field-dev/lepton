@@ -1,48 +1,53 @@
-//! Leptos auth UI: dialogs and embeddable forms composed with Orbital.
+//! Leptos auth dialogs and embeddable forms composed with Orbital.
 //!
-//! Server functions and library APIs live in [`lepton_auth`]. This crate supplies
-//! Leptos components and Orbital layout so hosts that need OAuth/factors alone do
-//! not pull UI dependencies.
-//!
-//! Auth UI `#[server]` functions in [`lepton_auth::actions`] register through
-//! Leptos `generate_route_list` / `leptos_routes_with_context`. You do not mount
-//! them as separate axum handlers. Session chrome (`get_session` /
-//! `init_auth_resource`) wires in from the host app shell.
-//!
-//! # Organized by task
-//!
-//! | Task | Start here | See also |
-//! |------|------------|----------|
-//! | Sign-in / sign-up / log-out modal | [`AuthDialog`] | [Mount `AuthDialog`](#mount-authdialog-shell); [`AuthDialogKind`], [`lepton_auth::paths`] |
-//! | Dedicated `/auth/*` pages | [`lepton_auth::paths`] | [Routes `/auth/*`](#routes-auth) |
-//! | Password reset | [`PasswordResetDialog`] | [`PasswordResetRequestContent`], [`PasswordResetConfirmContent`] |
-//! | OAuth callback page | [`OAuthCallbackContent`] | [`lepton_auth::paths::OAUTH_CALLBACK`], [`lepton_auth::actions::oauth`] |
-//! | Step-up before a sensitive op | [`provide_step_up_controller`], [`StepUpDialog`] | [Step-up](#step-up-critical-action); server verify in [`lepton_auth::factor`] |
-//! | Login MFA (sign-in 2FA) | [`SigninContent`], [`lepton_auth::session_mfa`] | Per-op re-auth: [Step-up](#step-up-critical-action) |
-//! | Confirm account prompt | [`ConfirmAccountPrompt`], [`ConfirmAccountPage`] | [`lepton_auth::actions::confirm_account`]; Continue carries `?referer=` |
-//! | Paged sign-up wizard | [`SignupContent`] | email → details → email/phone/TOTP (skippable); soft confirm banner until email+phone verified |
-//!
-//! Embed forms without the modal: [`SigninContent`], [`SignupContent`], [`LogoutContent`].
-//! Custom chrome / brand marks ([`AuthModalShell`], [`GoogleMark`], [`GitHubMark`],
-//! [`StepUpContent`], [`OAuthProviderButtons`]) are for hosts that compose their own shell.
+//! Mount [`AuthDialog`] (or embed [`SigninContent`] / [`SignupContent`]) in the host
+//! shell. Server functions and library APIs live in [`lepton_auth`]; this crate is the
+//! Orbital UI surface. Auth UI `#[server]` functions in [`lepton_auth::actions`] register
+//! through Leptos `generate_route_list` / `leptos_routes_with_context` — you do not mount
+//! them as separate axum handlers. Session chrome (`get_session` / `init_auth_resource`)
+//! wires in from the host app shell.
 //!
 //! # Features
 //!
-//! | Feature | Role |
-//! |---------|------|
-//! | `ssr` | Server-side rendering of auth UI |
-//! | `hydrate` | Client hydration |
-//! | `oauth-google` | Continue with Google (and the “or” divider) in [`OAuthProviderButtons`] |
-//! | `oauth-github` | Continue with GitHub (and the “or” divider) in [`OAuthProviderButtons`] |
+//! - **Auth dialog shell** — Provides [`AuthDialog`] for sign-in, sign-up, and log-out
+//!   in the host shell. Start here when the product needs a modal auth entry
+//!   ([Mount `AuthDialog`](#mount-authdialog-shell)). Dedicated `/auth/*` pages use
+//!   [`lepton_auth::paths`] ([Routes `/auth/*`](#routes-auth)).
+//! - **Embeddable forms** — Offers [`SigninContent`], [`SignupContent`], and
+//!   [`LogoutContent`] when you want the forms without the modal chrome
+//!   ([Mount `AuthDialog`](#mount-authdialog-shell)).
+//! - **Password reset** — Covers request and confirm UI via [`PasswordResetDialog`]
+//!   and content components for forgotten-password flows
+//!   ([Mount `AuthDialog`](#mount-authdialog-shell)).
+//! - **OAuth UI** — Renders [`OAuthProviderButtons`] and [`OAuthCallbackContent`] when
+//!   `oauth-*` features are on and the host exposes provider login
+//!   ([OAuth buttons](#oauth-buttons)).
+//! - **Step-up** — Enables re-proof before sensitive ops with
+//!   [`provide_step_up_controller`] and [`StepUpDialog`] when an already-signed-in user
+//!   must confirm identity again ([Step-up](#step-up-critical-action)).
+//! - **Confirm account** — Surfaces [`ConfirmAccountPrompt`] / [`ConfirmAccountPage`]
+//!   after signup when email or phone confirmation is still outstanding
+//!   ([Mount `AuthDialog`](#mount-authdialog-shell)).
 //!
-//! Account creation UI ([`SignupContent`]) is always included. OAuth buttons
-//! render only when the matching `oauth-*` features are enabled on this crate
-//! (forward [`lepton_auth`] `oauth-google` / `oauth-github`). Hosts must enable
-//! the same features on both SSR and hydrate graphs.
+//! # Getting started
 //!
-//! # Mount `AuthDialog` (shell)
+//! ## Mount `AuthDialog` (shell)
 //!
-//! Provide `open`, `kind`, and `referer`. Form submit calls [`lepton_auth::actions`].
+//! Mount `AuthDialog` when the host shell needs a modal entry for sign-in, sign-up, and
+//! log-out. Provide the step-up controller once so later sensitive actions can reopen MFA
+//! without remounting.
+//!
+//! Prerequisites: host Leptos app with `lepton-auth-ui` (`ssr` and/or `hydrate`), and
+//! `lepton-auth` actions registered on the route list.
+//!
+//! 1. Create `open` / `kind` / `referer` signals.
+//! 2. Call [`provide_step_up_controller`] once (keeps step-up available for later).
+//! 3. Mount [`AuthDialog`] + [`StepUpDialog`].
+//! 4. Toggle `open.set(true)` — observable: dialog visibility follows `open.get()`.
+//!
+//! Errors: missing controller context fails step-up later; unregistered actions fail
+//! form submits at runtime. Next: [Step-up](#step-up-critical-action) or
+//! [Routes `/auth/*`](#routes-auth).
 //!
 //! ```rust,ignore
 //! use lepton_auth_ui::{
@@ -53,7 +58,8 @@
 //! let open = RwSignal::new(false);
 //! let kind = RwSignal::new(AuthDialogKind::Signin);
 //! let referer = Signal::derive(|| "/welcome".to_string());
-//! let _step_up = provide_step_up_controller();
+//! let step_up = provide_step_up_controller();
+//! assert!(!step_up.open().get());
 //!
 //! view! {
 //!     <button type="button" on:click=move |_| open.set(true)>"Sign in"</button>
@@ -71,7 +77,15 @@
 //!     />
 //!     <StepUpDialog/>
 //! }
+//! open.set(true);
+//! assert!(open.get());
 //! ```
+//!
+//! Embed forms without the modal: [`SigninContent`], [`SignupContent`], [`LogoutContent`].
+//! Custom chrome / brand marks ([`AuthModalShell`], [`GoogleMark`], [`GitHubMark`],
+//! [`StepUpContent`], [`OAuthProviderButtons`]) are for hosts that compose their own shell.
+//!
+//! ## OAuth buttons
 //!
 //! Enable OAuth UI on the host (SSR + hydrate), then set boot env for the
 //! provider exchange:
@@ -88,7 +102,7 @@
 //! // Neither oauth-* feature: empty. Both features: divider + both buttons.
 //! ```
 //!
-//! # Routes (`/auth/*`)
+//! ## Routes (`/auth/*`)
 //!
 //! The host owns routes. Use [`lepton_auth::paths`] constants and mount pages that
 //! open [`AuthDialog`] (or embed content components). Typical paths:
@@ -112,16 +126,15 @@
 //! }
 //! ```
 //!
-//! # Step-up (critical action)
+//! ## Step-up (critical action)
 //!
 //! Mount [`StepUpDialog`] once after [`provide_step_up_controller`]. On a sensitive
 //! action, call [`StepUpController::request`], then verify with
 //! [`lepton_auth::factor::FactorChallengeService`] (or password re-check) and call
 //! [`StepUpController::complete_success`] / [`StepUpController::report_error`].
 //!
-//! The product shell (`lepton-shell` in lepton-uf-app) mounts the dialog for **future**
-//! host apps (for example Gluon control-plane ops). Account Settings does not drive
-//! step-up today; wipe uses its own password (+ TOTP) ladder on the wipe server fn.
+//! Observable: after `request`, [`StepUpController::open`] is `true` until success,
+//! error report, or cancel.
 //!
 //! ```rust,ignore
 //! use lepton_auth_ui::{
@@ -148,10 +161,31 @@
 //!         });
 //!     }),
 //! );
+//! assert!(step_up.open().get());
 //! ```
 //!
 //! For password + TOTP, use [`StepUpPolicy::PasswordAndTotp`] and pass both factors
 //! into your server fn. Server-side verify: [`lepton_auth::factor`].
+//!
+//! # Feature flags
+//!
+//! | Feature | Role |
+//! |---------|------|
+//! | `ssr` | Server-side rendering of auth UI |
+//! | `hydrate` | Client hydration |
+//! | `oauth-google` | Continue with Google (and the “or” divider) in [`OAuthProviderButtons`] |
+//! | `oauth-github` | Continue with GitHub (and the “or” divider) in [`OAuthProviderButtons`] |
+//!
+//! Account creation UI ([`SignupContent`]) is always included. OAuth buttons
+//! render only when the matching `oauth-*` features are enabled on this crate
+//! (forward [`lepton_auth`] `oauth-google` / `oauth-github`). Hosts must enable
+//! the same features on both SSR and hydrate graphs.
+//!
+//! # Further reading
+//!
+//! - [Mount `AuthDialog`](#mount-authdialog-shell) / [Step-up](#step-up-critical-action)
+//! - [`lepton_auth`](../lepton_auth/index.html) — server functions and delivery
+//! - Workspace `lepton-auth-ui-e2e` — Playwright browser coverage
 
 #![recursion_limit = "256"]
 

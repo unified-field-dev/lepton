@@ -7,12 +7,20 @@
 //!
 //! # Features
 //!
-//! - **Builder-first delivery** — boot [`EmailServiceBuilder`], inject [`EmailDeliveryService`], send
-//! - **Stock envelopes** — [`verification_email_envelope`], [`password_reset_email_envelope`]
-//! - **Swappable backends** — Noop, SMTP relay, Direct MX, optional Twilio `SendGrid` ([Choose a delivery backend](#choose-a-delivery-backend))
-//! - **Typed outcomes** — [`DeliveryReceipt`], [`EmailDeliveryError`]
-//! - **Safe tracing** — adapters omit recipient, body, and credentials from tracing fields
-//! - **Optional Spectra** — `lepton_email_send` counters when the `spectra` Cargo feature is enabled
+//! - **Builder-first delivery** — Provides a single boot path: build once with
+//!   [`EmailServiceBuilder`], inject [`EmailDeliveryService`], then send. Start with
+//!   [Noop](#noop) for local and CI sends without a network.
+//! - **Stock envelopes** — Offers ready verification and password-reset bodies so auth
+//!   hosts do not hand-write subjects. See [Noop](#noop) for a full send with
+//!   [`verification_email_envelope`].
+//! - **Swappable backends** — Lets hosts pick Noop, SMTP relay, Direct MX, or Twilio
+//!   `SendGrid` without changing call sites ([Choose a delivery backend](#choose-a-delivery-backend)).
+//! - **Typed outcomes** — Returns [`DeliveryReceipt`] on success or [`EmailDeliveryError`]
+//!   on failure so callers can branch and retry ([Handle outcomes](#handle-outcomes)).
+//! - **Safe tracing** — Keeps recipient, body, and credentials out of adapter log fields
+//!   when diagnosing delivery in production ([Noop](#noop)).
+//! - **Optional Spectra** — Emits `lepton_email_send` counters when the `spectra` Cargo
+//!   feature is on, for ops dashboards after send ([Noop](#noop)).
 //!
 //! # Getting started
 //!

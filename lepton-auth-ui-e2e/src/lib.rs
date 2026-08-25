@@ -1,3 +1,9 @@
+//! Playwright e2e host for `lepton-auth-ui` (Mailpit + SMS sink).
+//!
+//! This crate is a harness binary/app surface, not a publishable library. Operator
+//! setup, ports, and scenario notes live in the crate `README.md`. Product auth UI
+//! docs: [`lepton_auth_ui`](../lepton_auth_ui/index.html).
+
 #![allow(missing_docs)]
 #![recursion_limit = "256"]
 

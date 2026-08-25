@@ -10,19 +10,60 @@
 //! tokens. Recipient, body, emails, phones, user ids, passwords, OTPs, tokens,
 //! challenge ids, and free-form error text are never recorded.
 //!
-//! ## Concern → API
+//! # Features
 //!
-//! | Concern | API |
-//! |---------|-----|
-//! | Delivery | [`record_email_send`], [`record_sms_send`] |
-//! | Auth funnel | [`record_signup`], [`record_signin`], [`record_oauth`], [`record_verify`], [`record_password_reset`], [`record_totp`], [`record_device`], [`record_contact`], [`record_account`], [`record_identity_delete`], [`record_step_up`] |
-//! | Failures | [`log_auth_failure`] |
+//! - **Delivery counters** — Records [`record_email_send`] / [`record_sms_send`] after a
+//!   send so ops can chart driver and outcome without PII
+//!   ([Record a delivery counter](#record-a-delivery-counter)).
+//! - **Auth funnel counters** — Covers signup, sign-in, OAuth, verify, and related
+//!   helpers when measuring product auth stages
+//!   ([Auth funnel variant](#auth-funnel-variant)).
+//! - **Failure events** — Emits [`log_auth_failure`] with bounded `reason_class` tokens
+//!   when correlating auth errors without free-form text
+//!   ([Auth funnel variant](#auth-funnel-variant)).
+//! - **Label sanitizers** — Provides [`emit`] `bound_*` helpers for hosts that map raw
+//!   strings before emit ([Record a delivery counter](#record-a-delivery-counter)).
+//! - **Transport topics** — Carries Spectra payload DTOs in [`topics`] for cross-process
+//!   emit shapes ([Record a delivery counter](#record-a-delivery-counter)).
 //!
-//! Counter and event field names live on the schema types (and in [`topics`] for
-//! transport DTOs). Label allowlists / sanitizers (`bound_*`) are in [`emit`] for
-//! hosts that map raw strings before emit.
+//! # Getting started
 //!
-//! ## Examples
+//! ## Record a delivery counter
+//!
+//! Records a delivery counter after email or SMS send so ops can chart driver and outcome
+//! without recipient or body fields. Call after the product send path when Spectra is
+//! already booted in the process.
+//!
+//! Prerequisites: boot Spectra in the host process first (embedded SQLite, mem
+//! backends, or your Spectra install). Counters are best-effort and never fail
+//! the product path.
+//!
+//! 1. Install Spectra (`Spectra::builder` / host install helper).
+//! 2. Call [`record_email_send`] (or [`record_sms_send`]) with driver + outcome.
+//! 3. Query or observe `lepton_email_send` / `lepton_sms_send` in your Spectra store.
+//!
+//! Errors: missing Spectra install means no metric points (emit stays best-effort).
+//! Next: [Auth funnel variant](#auth-funnel-variant) or the smoke example.
+//!
+//! ```rust,ignore
+//! use lepton_spectra_telemetry::{record_email_send, EmailSendOutcome};
+//!
+//! // Host must boot Spectra first (see email_send_record_smoke).
+//! record_email_send("noop", EmailSendOutcome::Success);
+//! // Observable metric name after query:
+//! let metric_name = "lepton_email_send";
+//! assert_eq!(metric_name, "lepton_email_send");
+//! ```
+//!
+//! Runnable: `cargo run -p lepton-spectra-telemetry --example email_send_record_smoke`
+//!
+//! ## Auth funnel variant
+//!
+//! Auth funnel helpers record signup, sign-in, OAuth, and related stage counters for
+//! product funnels. Use them from auth success and MFA paths after Spectra boot.
+//!
+//! Prerequisites: Spectra boot as above. Errors: same best-effort emit. Next:
+//! [`log_auth_failure`] for bounded failure events.
 //!
 //! ```rust,ignore
 //! use lepton_spectra_telemetry::{
@@ -31,6 +72,8 @@
 //!
 //! record_signin(SigninStage::Password, AuthOutcome::NeedsMfa, "none", AuthFactor::None);
 //! record_signin(SigninStage::MfaComplete, AuthOutcome::Success, "none", AuthFactor::Totp);
+//! let metric_name = "lepton_signin";
+//! assert_eq!(metric_name, "lepton_signin");
 //! ```
 //!
 //! OAuth:
@@ -49,8 +92,17 @@
 //! );
 //! ```
 //!
-//! Runnable smoke (host must boot Spectra first):
-//! `cargo run -p lepton-spectra-telemetry --example email_send_record_smoke`.
+//! # Feature flags
+//!
+//! This crate has no Cargo feature flags. Optional emit from adapters uses the
+//! `spectra` feature on `lepton-smtp`, `lepton-sms`, or `lepton-auth`.
+//!
+//! # Further reading
+//!
+//! - [Record a delivery counter](#record-a-delivery-counter) — first success
+//! - [`emit`] — bounded helpers and sanitizers
+//! - [`helpers`] — typed schema helpers
+//! - [`topics`] — transport DTOs
 
 #![allow(clippy::too_long_first_doc_paragraph)]
 

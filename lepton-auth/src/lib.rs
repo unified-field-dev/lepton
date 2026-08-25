@@ -1,108 +1,66 @@
-//! Auth library: server functions, factors, OAuth, password policy, and tokens.
+//! Server functions, multi-factor challenges, OAuth, password policy, and tokens for
+//! Unified Field hosts.
 //!
-//! Compose with **higgs** / **higgs-host** for request context. Form UI lives in
-//! [`lepton_auth_ui`](../lepton_auth_ui/index.html) (Orbital). Start with the task
-//! table below, then the teaching binaries under `examples/`.
+//! Inject delivery with [`provide_auth_services`], gate product server fns with
+//! [`require_auth_user`], and issue challenges through [`FactorChallengeService`].
+//! Form UI lives in [`lepton_auth_ui`](../lepton_auth_ui/index.html) (Orbital). Compose
+//! request context with **higgs** / **higgs-host**.
 //!
-//! # Organized by task
+//! # Features
 //!
-//! | Task | Feature | Start here | See also |
-//! |------|---------|------------|----------|
-//! | **Boot delivery** — inject email/SMS + public URL | `ssr` (+ channels) | [`provide_auth_services`], [`services`] | [Boot delivery](#boot-delivery-email-only) |
-//! | **Session Backend + middleware** | host | [`Backend`](../lepton_host_adapter/struct.Backend.html), [`session_snapshot_middleware`](../lepton_host_adapter/fn.session_snapshot_middleware.html) | [Host wiring](../lepton_host_adapter/index.html#host-wiring) |
-//! | **Authenticated server fn** | `ssr` | [`require_auth_user`], [`user_valence`] | [Authenticated server fn](#authenticated-server-fn-current-user) |
-//! | **Mount auth UI** | — | [`lepton_auth_ui`](../lepton_auth_ui/index.html), [`actions`], [`paths`] | [Mount `AuthDialog`](../lepton_auth_ui/index.html#mount-authdialog-shell) |
-//! | **Durable delivery** | `ssr` + `boson-delivery` (+ channels) | `delivery` module | [Examples ladder](#examples-ladder) |
-//! | **Verification / reset mail** | `email` | [`email_delivery`] | [`verification_email_envelope`](../lepton_smtp/fn.verification_email_envelope.html) |
-//! | **OTP / TOTP verify** | `email` / `phone` / `totp` | [`factor`] | [`factor` Examples](factor/index.html#examples) |
-//! | **Login MFA** | `ssr` (+ `totp`) | [`session_mfa`], [`actions::signin`] | Step-up (per-op): [UI](../lepton_auth_ui/index.html#step-up-critical-action) |
-//! | **Step-up before sensitive op** | `totp` | [`StepUpDialog`](../lepton_auth_ui/fn.StepUpDialog.html), [`factor::FactorChallengeService`] | [Step-up (UI)](../lepton_auth_ui/index.html#step-up-critical-action) |
-//! | **Signup** | `ssr` (+ `email`) | [`actions`] (UI), [`signup_api`], [`signup_policy`] | [`signup_api::ssr::create_pending_user`] |
-//! | **OAuth / contacts / devices** | `ssr` (+ oauth / `webauthn`) | [`actions::oauth`], [`contacts`], [`devices`] | [`oauth`], [`actions::oauth_settings`] |
-//! | **Confirm account** | `ssr` (+ `email` / `phone`) | [`actions::confirm_account`], [`trust::confirm_user`] | [`ConfirmAccountPrompt`](../lepton_auth_ui/fn.ConfirmAccountPrompt.html) |
-//! | **TOTP enroll** | `totp` | [`actions::totp`] | Library path: [`totp`] |
-//! | **Wipe / erase account** | `ssr` | [`actions::account::wipe_account`], [`identity_delete::erase_account`] | [`identity_delete`] |
+//! - **Boot delivery** — Provides injected email/SMS and a public base URL through
+//!   [`services`] so send paths resolve adapters at runtime. Use this when wiring SSR
+//!   boot before any verification mail ([Boot delivery](#boot-delivery-email-only)).
+//! - **Authenticated server fns** — Gates product server functions on the session with
+//!   [`require_auth_user`], then opens user-scoped Valence via [`user_valence`] (or
+//!   [`higgs_ctx`] without the gate). Reach for this when a `#[server]` fn must know
+//!   who is calling ([Authenticated server fn](#authenticated-server-fn-current-user)).
+//! - **Factors** — Issues and verifies email/SMS OTP and TOTP through [`factor`] /
+//!   [`FactorChallengeService`] when a flow needs a second factor
+//!   ([`factor` Examples](factor/index.html#examples)).
+//! - **Signup, OAuth, contacts, and devices** — Covers account creation and linked
+//!   identity surfaces in [`signup_api`], [`oauth`], [`contacts`], and [`devices`]
+//!   (wipe/erase under [`identity_delete`]; [Examples ladder](#examples-ladder)).
+//! - **Tokens and policy** — Provides one-time tokens ([`token_helpers`]) and password /
+//!   audit helpers ([`security`]) for reset and policy checks
+//!   ([Boot delivery](#boot-delivery-email-only)).
+//! - **Durable delivery** — Enqueues mail/SMS through Boson when `boson-delivery` is on
+//!   so retries survive process restarts ([Examples ladder](#examples-ladder)).
+//! - **Auth UI actions** — Exposes [`actions`] server functions consumed by
+//!   [`lepton_auth_ui`](../lepton_auth_ui/index.html). Mount the shell at
+//!   [Mount `AuthDialog`](../lepton_auth_ui/index.html#mount-authdialog-shell).
+//! - **Session backend** — Documents axum-login + higgs snapshot wiring on
+//!   [`lepton_host_adapter`](../lepton_host_adapter/index.html#host-wiring) when the
+//!   host owns cookies and login.
 //!
-//! ## Also available
+//! Also on this crate: live verification status ([`verification`], [`events`]),
+//! session bag keys ([`session_binding`]), referer helpers ([`routes`]), and SMS
+//! adapters via [`lepton_sms`](../lepton_sms/index.html).
 //!
-//! One-time tokens ([`token_helpers`]), password policy / audit ([`security`]),
-//! live verification status ([`verification`], [`events`]), durable Boson delivery
-//! (`boson-delivery` → `delivery`), custom mail envelopes ([`EmailEnvelope`](../lepton_smtp/struct.EmailEnvelope.html)),
-//! SMS adapters ([`lepton_sms`](../lepton_sms/index.html)), session bag keys
-//! ([`session_binding`]), and referer helpers ([`routes`]). Module pages and the
-//! sidebar list the full public surface.
-//!
-//! ## Typical verification flow (backend)
-//!
-//! 1. Inject SMTP/SMS via [`services::provide_auth_services`] at SSR boot.
-//! 2. Issue challenges with [`factor::FactorChallengeService`] (feature-gated per channel).
-//! 3. Consume tokens / codes; success marks the contact verified and publishes Photon.
-//! 4. Refetch [`verification::verification_status`] with the challenge id.
-//!
-//! ## Features
-//!
-//! | Feature | Role |
-//! |---------|------|
-//! | `ssr` | Server functions, token/password helpers, Valence/higgs helpers |
-//! | `email` | Verification / reset **mail** delivery (`lepton-smtp`); not email-as-login |
-//! | `phone` | SMS OTP + `lepton-sms` adapters |
-//! | `totp` / `two_factor` | TOTP enroll / verify (`totp-rs`) + QR SVG (`qrcode`) on SSR |
-//! | `webauthn` | `WebAuthn` passkey ceremony for `AuthDevice` (`webauthn-rs`) |
-//! | `oauth-google` | Live Google authorize URL + token/userinfo exchange; mock provider via `use_mock_provider` |
-//! | `oauth-github` | Live GitHub authorize URL + token/user/emails exchange; mock provider via `use_mock_provider` |
-//! | `full` | `email` + `phone` + `totp` + oauth flags + `webauthn` |
-//! | `boson-delivery` | Durable email/SMS send + attempt log (`delivery` module, TTL 7d) |
-//! | `spectra` | Emit auth funnel Spectra counters / `lepton_auth_failure` via `lepton-spectra-telemetry` (label tokens only; never emails, codes, or free-form errors) |
-//! | `hydrate` | Client hydration helpers (`token_url`; hosts provide the session bridge) |
-//! | `test-utils` | Photon publish capture for integration tests |
-//!
-//! Hosts that want today's mail behavior: `features = ["ssr", "email"]` (or `ssr,full`).
-//! Account signup is available under `ssr` by default (UI in `lepton-auth-ui`). Private
-//! hosts set `UF_LEPTON_SIGNUP_DISABLED=1` ([`signup_policy`]).
-//!
-//! ## Integration checklist
-//!
-//! 1. Call [`services::provide_auth_services`] at boot. Send paths return
-//!    [`services::LeptonAuthServicesError::NotInContext`] when missing.
-//! 2. Wire axum-login [`Backend`](../lepton_host_adapter/struct.Backend.html) + session
-//!    middleware from `lepton-host-adapter`; provide higgs in the Leptos route context.
-//! 3. Resolve secrets **outside** this crate (plain strings into builders). This crate
-//!    does not load a secrets manager.
-//! 4. Mount photon-leptos WS + Origin allowlist for live verification UI (host obligation).
-//! 5. Validate SMTP with `infra/mailpit` when needed (`UF_MAILPIT=1`).
-//! 6. For private deploys, set `UF_LEPTON_SIGNUP_DISABLED=1` and hide sign-up CTAs.
-//! 7. Multi-instance hosts: persistent session store + shared OAuth CSRF (see kit `SECURITY.md`).
-//!
-//! Auth UI server functions in [`actions`] register through Leptos
-//! `generate_route_list` / `leptos_routes_with_context`.
-//!
-//! ## Authenticated server fn (current user)
-//!
-//! Product server functions typically gate on the session user, then open a user-scoped
-//! Valence. [`require_auth_user`] returns higgs context plus the signed-in
-//! [`User`](../lepton_host_adapter/struct.User.html). [`user_valence`] builds Valence for
-//! that actor. Use [`higgs_ctx`] when you need context without the auth gate.
-//!
-//! ```rust,ignore
-//! use lepton_auth::{require_auth_user, user_valence};
-//! use leptos::prelude::*;
-//!
-//! #[server]
-//! async fn my_profile_id() -> Result<String, ServerFnError> {
-//!     let (ctx, auth_user) = require_auth_user().await?;
-//!     let _valence = user_valence(&ctx)?;
-//!     Ok(auth_user.id.clone())
-//! }
-//! ```
+//! # Getting started
 //!
 //! ## Boot delivery (email-only)
 //!
-//! Inject email once at SSR boot. Phone is optional via `.sms(...)` when the `phone`
-//! feature is on.
+//! Boot delivery injects email (and optionally SMS) plus a public base URL once at SSR
+//! startup so verification and reset sends can resolve adapters later. Call this from the
+//! host boot path before serving requests.
+//!
+//! Prerequisites: `lepton-auth` with `features = ["ssr", "email"]`, and a mail adapter
+//! (Noop for CI, SMTP for Mailpit/relay).
+//!
+//! 1. Build an [`EmailDeliveryService`](../lepton_smtp/trait.EmailDeliveryService.html) via
+//!    [`EmailServiceBuilder`](../lepton_smtp/struct.EmailServiceBuilder.html).
+//! 2. [`LeptonAuthServicesBuilder::email`] + [`LeptonAuthServicesBuilder::public_base_url`] →
+//!    [`LeptonAuthServicesBuilder::build`].
+//! 3. Call [`provide_auth_services`] once at SSR boot.
+//! 4. Later extracts use [`auth_services`]; missing context is
+//!    [`LeptonAuthServicesError::NotInContext`].
 //!
 //! ```rust,ignore
 //! use std::sync::Arc;
-//! use lepton_auth::services::{provide_auth_services, LeptonAuthServicesBuilder};
+//! use lepton_auth::services::{
+//!     provide_auth_services, LeptonAuthServicesBuilder, LeptonAuthServicesError,
+//! };
 //! use lepton_smtp::{EmailServiceBuilder, SmtpConfig};
 //!
 //! // Cargo.toml: lepton-auth = { features = ["ssr", "email"] }
@@ -125,17 +83,96 @@
 //!             .build()?,
 //!     ),
 //! );
+//! let resolved = lepton_auth::auth_services();
+//! assert!(
+//!     resolved.is_ok()
+//!         || matches!(
+//!             resolved.err(),
+//!             Some(LeptonAuthServicesError::NotInContext)
+//!         )
+//! );
 //! ```
 //!
-//! ## Examples ladder
+//! Runnable: `cargo run -p lepton-auth --example auth_flows_noop_smtp --features ssr,email`
+//!
+//! ## Authenticated server fn (current user)
+//!
+//! Product server functions gate on the session user, then open a user-scoped Valence.
+//! [`require_auth_user`] returns higgs context plus the signed-in
+//! [`User`](../lepton_host_adapter/struct.User.html). [`user_valence`] builds Valence for
+//! that actor. Use [`higgs_ctx`] when you need context without the auth gate.
+//!
+//! Errors: unauthenticated callers get `ServerFnError` from [`require_auth_user`].
+//! Next: query with the returned Valence, or mount UI via
+//! [`lepton_auth_ui`](../lepton_auth_ui/index.html#mount-authdialog-shell).
+//!
+//! ```rust,ignore
+//! use lepton_auth::{require_auth_user, user_valence};
+//! use leptos::prelude::*;
+//!
+//! #[server]
+//! async fn my_profile_id() -> Result<String, ServerFnError> {
+//!     let (ctx, auth_user) = require_auth_user().await?;
+//!     let valence = user_valence(&ctx)?;
+//!     assert!(!auth_user.id.to_string().is_empty());
+//!     let _ready = &valence; // user-scoped Valence for follow-on queries
+//!     Ok(auth_user.id.to_string())
+//! }
+//! ```
+//!
+//! ## Typical verification flow (backend)
+//!
+//! 1. Inject SMTP/SMS via [`provide_auth_services`] at SSR boot.
+//! 2. Issue challenges with [`FactorChallengeService`] (feature-gated per channel).
+//! 3. Consume tokens / codes; success marks the contact verified and publishes Photon.
+//! 4. Refetch [`verification::verification_status`] with the challenge id.
+//!
+//! # Feature flags
+//!
+//! | Feature | Role |
+//! |---------|------|
+//! | `ssr` | Server functions, token/password helpers, Valence/higgs helpers |
+//! | `email` | Verification / reset **mail** delivery (`lepton-smtp`); not email-as-login |
+//! | `phone` | SMS OTP + `lepton-sms` adapters |
+//! | `totp` / `two_factor` | TOTP enroll / verify (`totp-rs`) + QR SVG (`qrcode`) on SSR |
+//! | `webauthn` | `WebAuthn` passkey ceremony for `AuthDevice` (`webauthn-rs`) |
+//! | `oauth-google` | Live Google authorize URL + token/userinfo exchange; mock provider via `use_mock_provider` |
+//! | `oauth-github` | Live GitHub authorize URL + token/user/emails exchange; mock provider via `use_mock_provider` |
+//! | `full` | `email` + `phone` + `totp` + oauth flags + `webauthn` |
+//! | `boson-delivery` | Durable email/SMS send + attempt log (`delivery` module, TTL 7d) |
+//! | `spectra` | Emit auth funnel Spectra counters / `lepton_auth_failure` via `lepton-spectra-telemetry` (label tokens only; never emails, codes, or free-form errors) |
+//! | `hydrate` | Client hydration helpers (`token_url`; hosts provide the session bridge) |
+//! | `test-utils` | Photon publish capture for integration tests |
+//!
+//! Hosts that want today's mail behavior: `features = ["ssr", "email"]` (or `ssr,full`).
+//! Account signup is available under `ssr` by default (UI in `lepton-auth-ui`). Private
+//! hosts set `UF_LEPTON_SIGNUP_DISABLED=1` ([`signup_policy`]).
+//!
+//! # Integration checklist
+//!
+//! 1. Call [`provide_auth_services`] at boot. Send paths return
+//!    [`LeptonAuthServicesError::NotInContext`] when missing.
+//! 2. Wire axum-login [`Backend`](../lepton_host_adapter/struct.Backend.html) + session
+//!    middleware from `lepton-host-adapter`; provide higgs in the Leptos route context.
+//! 3. Resolve secrets **outside** this crate (plain strings into builders). This crate
+//!    does not load a secrets manager.
+//! 4. Mount photon-leptos WS + Origin allowlist for live verification UI (host obligation).
+//! 5. Validate SMTP with `infra/mailpit` when needed (`UF_MAILPIT=1`).
+//! 6. For private deploys, set `UF_LEPTON_SIGNUP_DISABLED=1` and hide sign-up CTAs.
+//! 7. Multi-instance hosts: persistent session store + shared OAuth CSRF (see kit `SECURITY.md`).
+//!
+//! Auth UI server functions in [`actions`] register through Leptos
+//! `generate_route_list` / `leptos_routes_with_context`.
+//!
+//! # Examples ladder
 //!
 //! | Level | Where |
 //! |-------|--------|
 //! | Highlight | [Boot delivery](#boot-delivery-email-only) |
-//! | Mid | `delivery` module — `DeliveryRuntime::install` + enqueue sketch |
-//! | Detailed | `tests/delivery_attempt.rs` (`ssr`, `boson-delivery`, `email`) |
+//! | Mid | [`factor` Examples](factor/index.html#examples); `examples/password_and_token` |
+//! | Detailed | `examples/auth_flows_noop_smtp`, `examples/auth_totp_enroll`, `tests/delivery_attempt.rs` |
 //!
-//! ## Further reading
+//! # Further reading
 //!
 //! - Crate [`README.md`](https://github.com/unified-field-dev/lepton/blob/main/lepton-auth/README.md)
 //! - [`lepton_auth_ui`](../lepton_auth_ui/index.html) — dialogs and embeddable forms

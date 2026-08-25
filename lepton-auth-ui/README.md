@@ -1,8 +1,25 @@
 # lepton-auth-ui
 
-Leptos auth form components built on Orbital. Depends on [`lepton-auth`](../lepton-auth/) for `#[server]` actions, paths, and password-policy helpers.
+Leptos auth dialogs and embeddable forms composed with Orbital. Depends on
+[`lepton-auth`](../lepton-auth/) for `#[server]` actions, paths, and password-policy helpers.
+
+**Source of truth for teaching:** `cargo doc -p lepton-auth-ui --features ssr --open`.
 
 ## Features
+
+- **Auth dialog shell** — `AuthDialog` for sign-in / sign-up / log-out
+- **Embeddable forms** — `SigninContent`, `SignupContent`, `LogoutContent`
+- **Step-up** — `provide_step_up_controller` + `StepUpDialog`
+- **OAuth UI** — `OAuthProviderButtons` / callback content (feature-gated)
+- **Confirm account** — `ConfirmAccountPrompt`, `ConfirmAccountPage`
+
+## Getting started
+
+Mount `AuthDialog` with `open` / `kind` / `referer` signals, call
+`provide_step_up_controller` once, and toggle `open.set(true)`. Full examples live in
+crate rustdoc (**Getting started** / Mount `AuthDialog`).
+
+## Feature flags
 
 | Feature | Role |
 |---------|------|
@@ -11,6 +28,8 @@ Leptos auth form components built on Orbital. Depends on [`lepton-auth`](../lept
 | `oauth-google` | Continue with Google and the “or” divider |
 | `oauth-github` | Continue with GitHub and the “or” divider |
 
+Hosts must enable matching `oauth-*` features on both SSR and hydrate graphs.
+
 ## Public components
 
 `AuthDialog`, `AuthModalShell`, `SigninContent`, `SignupContent`, `LogoutContent`,
@@ -18,13 +37,6 @@ Leptos auth form components built on Orbital. Depends on [`lepton-auth`](../lept
 `PasswordResetRequestContent`, `PasswordResetConfirmContent`,
 `provide_step_up_controller`, `StepUpDialog`, `StepUpController`, `StepUpPolicy`,
 `ConfirmAccountPrompt`, `ConfirmAccountPage`.
-
-Signup collects **legal name** and **display name** separately. With
-`oauth-google` / `oauth-github` enabled on SSR and hydrate, sign-in and sign-up
-show Continue with Google / GitHub (same-window redirect via `BeginOAuth` /
-`CompleteOAuthCallback`). Without those features, the OAuth block is omitted.
-
-Mount, routes, and step-up examples: `cargo doc -p lepton-auth-ui --open`.
 
 Library browser e2e and leptos-lints (`cargo dylint` on hydrate): see workspace
 `lepton-auth-ui-e2e` / [`docs/VERIFICATION.md`](../docs/VERIFICATION.md).
