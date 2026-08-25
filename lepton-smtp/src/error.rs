@@ -1,6 +1,17 @@
 //! Typed errors for email configuration and delivery.
+//!
+//! Callers match on [`EmailDeliveryError`] (or inspect [`EmailDeliveryError::reason_class`] /
+//! [`EmailDeliveryError::is_transient`]) after [`crate::EmailServiceBuilder::build`] or
+//! [`crate::EmailDeliveryService::send`].
 
 /// Errors from email configuration or delivery.
+///
+/// | Variant | When | Caller response |
+/// |---------|------|-----------------|
+/// | [`ConfigError`](Self::ConfigError) | Missing/invalid builder or env config | Fix config; not retryable |
+/// | [`TransportError`](Self::TransportError) | Connection / protocol failure | Retry only if your ops policy treats the class as transient |
+/// | [`ProviderRejected`](Self::ProviderRejected) | Provider rejected the message | Usually permanent; inspect `reason_class` |
+/// | [`Transient`](Self::Transient) | Temporary failure | Safe to retry with backoff ([`is_transient`](Self::is_transient)) |
 ///
 /// Display strings include a `reason_class=` token where useful for ops triage.
 /// Messages never include passwords, message bodies, or full recipient mailboxes

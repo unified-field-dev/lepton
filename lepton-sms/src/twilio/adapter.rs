@@ -1,4 +1,7 @@
 //! Live Twilio Messages REST [`SmsDeliveryService`] adapter.
+//!
+//! Requires the `twilio` Cargo feature. Prefer the crate-root
+//! [Twilio Messages guide](crate#twilio-messages) for credentials, send → receipt, and errors.
 
 use async_trait::async_trait;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
@@ -19,12 +22,17 @@ struct TwilioMessageResponse {
 
 /// [`SmsDeliveryService`] that sends via Twilio Messages REST.
 ///
+/// # Errors
+///
+/// Config / E.164 failures, provider rejection, and transient HTTP/status cases
+/// ([`SmsDeliveryError::is_transient`]).
+///
 /// # Examples
 ///
 /// ```no_run
-/// use lepton_sms::{SmsServiceBuilder, TwilioSmsConfig};
+/// use lepton_sms::{SmsDeliveryService, SmsEnvelope, SmsServiceBuilder, TwilioSmsConfig};
 ///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 /// let sms = SmsServiceBuilder::new()
 ///     .twilio(
 ///         TwilioSmsConfig::builder()
@@ -35,7 +43,14 @@ struct TwilioMessageResponse {
 ///             .build()?,
 ///     )
 ///     .build()?;
-/// let _ = sms;
+/// let receipt = sms
+///     .send(&SmsEnvelope {
+///         to_e164: "+15551234567".into(),
+///         body: "Your code is 123456".into(),
+///         otp_code: None,
+///     })
+///     .await?;
+/// assert_eq!(receipt.provider, "twilio");
 /// # Ok(())
 /// # }
 /// ```

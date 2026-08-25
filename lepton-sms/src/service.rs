@@ -1,4 +1,8 @@
 //! SMS delivery trait and service builder.
+//!
+//! Hosts construct an [`SmsDeliveryService`] once with [`SmsServiceBuilder`], then call
+//! [`SmsDeliveryService::send`] with an [`crate::SmsEnvelope`]. Prefer crate-root backend
+//! guides for teaching paths; builder methods below are API reference.
 
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -18,18 +22,51 @@ use crate::twilio_config::TwilioSmsConfig;
 use crate::twilio_verify_config::TwilioVerifyConfig;
 
 /// Sends [`SmsEnvelope`]s via a specific adapter ([`NoopSmsAdapter`], [`TestSmsAdapter`], …).
+///
+/// # Contract
+///
+/// * `driver_name` reports a stable adapter label for tracing.
+/// * `send` delivers `envelope` and returns a [`SmsDeliveryReceipt`] on success.
+/// * Implementations must not log E.164, bodies, OTPs, or credentials in tracing fields.
 #[async_trait]
 pub trait SmsDeliveryService: Send + Sync {
     /// Stable adapter name for tracing (`noop`, `test`, `twilio`, …).
     fn driver_name(&self) -> &'static str;
     /// Send `envelope`, returning a [`SmsDeliveryReceipt`] on success.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SmsDeliveryError`] when configuration is invalid, the transport fails,
+    /// the provider rejects the message, or a transient error occurs. Callers may use
+    /// [`SmsDeliveryError::is_transient`] to decide on retry.
     async fn send(&self, envelope: &SmsEnvelope) -> Result<SmsDeliveryReceipt, SmsDeliveryError>;
 }
 
 /// Builder for an [`SmsDeliveryService`].
 ///
-/// Requires an explicit adapter mode (`noop`, `test`, `adapter`, or `twilio` when the
-/// `twilio` Cargo feature is enabled).
+/// Requires an explicit adapter mode (`noop`, `test`, `adapter`, `http_capture`, or `twilio`
+/// when the `twilio` Cargo feature is enabled).
+///
+/// # Examples
+///
+/// Noop path (send and inspect the receipt):
+///
+/// ```no_run
+/// use lepton_sms::{SmsDeliveryService, SmsEnvelope, SmsServiceBuilder};
+///
+/// # async fn run() -> Result<(), lepton_sms::SmsDeliveryError> {
+/// let sms = SmsServiceBuilder::new().noop().build()?;
+/// let receipt = sms
+///     .send(&SmsEnvelope {
+///         to_e164: "+15551234567".into(),
+///         body: "Your code is 123456".into(),
+///         otp_code: Some("123456".into()),
+///     })
+///     .await?;
+/// assert_eq!(receipt.provider, "noop");
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Default)]
 pub struct SmsServiceBuilder {
     adapter: Option<Arc<dyn SmsDeliveryService>>,
@@ -61,7 +98,10 @@ impl SmsServiceBuilder {
         }
     }
 
-    /// Use the no-op adapter.
+    /// Select the no-op adapter (local / CI). Does not contact a network.
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [Noop guide](crate#noop).
     #[must_use]
     pub fn noop(mut self) -> Self {
         self.clear_modes();
@@ -69,7 +109,11 @@ impl SmsServiceBuilder {
         self
     }
 
-    /// Use the in-memory test adapter (captures envelopes).
+    /// Select the in-memory test adapter (captures envelopes).
+    ///
+    /// Still call [`build`](Self::build) after this. Prefer [`adapter`](Self::adapter) with a
+    /// shared [`TestSmsAdapter`] when tests need [`TestSmsAdapter::recorded`]. Teaching path:
+    /// crate-root [Test guide](crate#test).
     #[must_use]
     pub fn test(mut self) -> Self {
         self.clear_modes();
@@ -78,6 +122,8 @@ impl SmsServiceBuilder {
     }
 
     /// Inject a custom adapter (e.g. a shared [`TestSmsAdapter`] for asserts).
+    ///
+    /// Still call [`build`](Self::build) after this.
     #[must_use]
     pub fn adapter(mut self, adapter: Arc<dyn SmsDeliveryService>) -> Self {
         self.clear_modes();
@@ -85,7 +131,10 @@ impl SmsServiceBuilder {
         self
     }
 
-    /// POST envelopes to an HTTP capture sink (lab; default `:8099`).
+    /// Select the HTTP capture adapter (lab sink; default `:8099`).
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [HTTP capture guide](crate#http-capture).
     #[must_use]
     pub fn http_capture(mut self, cfg: HttpCaptureSmsConfig) -> Self {
         self.clear_modes();
@@ -93,7 +142,10 @@ impl SmsServiceBuilder {
         self
     }
 
-    /// Use the live Twilio Messages REST adapter (`feature = "twilio"`).
+    /// Select the live Twilio Messages REST adapter (`feature = "twilio"`).
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [Twilio Messages guide](crate#twilio-messages).
     #[cfg(feature = "twilio")]
     #[must_use]
     pub fn twilio(mut self, cfg: TwilioSmsConfig) -> Self {
@@ -102,7 +154,10 @@ impl SmsServiceBuilder {
         self
     }
 
-    /// Use the live Twilio Verify custom-code adapter (`feature = "twilio"`).
+    /// Select the live Twilio Verify custom-code adapter (`feature = "twilio"`).
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [Twilio Verify guide](crate#twilio-verify).
     #[cfg(feature = "twilio")]
     #[must_use]
     pub fn twilio_verify(mut self, cfg: TwilioVerifyConfig) -> Self {

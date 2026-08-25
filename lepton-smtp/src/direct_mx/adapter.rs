@@ -1,4 +1,8 @@
 //! Direct-to-MX [`EmailDeliveryService`] adapter.
+//!
+//! Resolves the recipient domain's MX hosts and attempts SMTP delivery to them. Prefer the
+//! crate-root [Direct MX guide](crate#direct-mx) for prerequisites (often outbound port 25),
+//! setup, receipt shape (`direct_mx:<host>`), and error classes.
 
 use async_trait::async_trait;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
@@ -15,6 +19,38 @@ use crate::service::EmailDeliveryService;
 
 /// [`EmailDeliveryService`] that delivers directly to the recipient domain's MX hosts,
 /// bypassing a relay.
+///
+/// # Errors
+///
+/// [`EmailDeliveryError`] for config, DNS/MX lookup, host timeout, and transport failures.
+/// See [`EmailDeliveryError::is_transient`] for retry decisions.
+///
+/// # Examples
+///
+/// ```no_run
+/// use lepton_smtp::{
+///     verification_email_envelope, DirectMxConfig, EmailDeliveryService, EmailServiceBuilder,
+///     VerificationEmailFlow,
+/// };
+///
+/// # async fn run() -> Result<(), lepton_smtp::EmailDeliveryError> {
+/// let email = EmailServiceBuilder::new()
+///     .direct_mx(
+///         DirectMxConfig::builder()
+///             .from_email("noreply@example.test")
+///             .build()?,
+///     )
+///     .build()?;
+/// let message = verification_email_envelope(
+///     "reader@example.test",
+///     "123456",
+///     VerificationEmailFlow::Signup,
+/// );
+/// let receipt = email.send(&message).await?;
+/// assert!(receipt.provider.starts_with("direct_mx:"));
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Debug)]
 pub struct DirectMxAdapter {
     cfg: DirectMxConfig,

@@ -1,11 +1,42 @@
 //! SMTP relay configuration and builder.
+//!
+//! Build a validated [`SmtpConfig`] for [`crate::SmtpAdapter`] / [`crate::EmailServiceBuilder::smtp`].
+//! For Mailpit locally: `host = "127.0.0.1"`, `port = 1025`, `use_tls = false`.
 
 use crate::error::EmailDeliveryError;
 
-/// Configuration for [`crate::SmtpAdapter`].
+/// Relay settings for [`crate::SmtpAdapter`].
 ///
-/// Prefer [`SmtpConfig::builder`] for validated construction. [`SmtpConfig::from_env`]
-/// remains as a host helper that loads `UF_SMTP_*` / `UF_EMAIL_*` variables.
+/// Prefer [`SmtpConfig::builder`] so required fields and credential pairing are checked before
+/// send. Use when delivering through Mailpit or a production SMTP host.
+///
+/// Required for a usable config: `host`, `port`, `from_email`. Optional: `use_tls`, `username`,
+/// `password`, `from_name` (default `Orbital`). Username and password must both be set or both
+/// omitted. TLS defaults to `true` when credentials are set, else `false`; an explicit
+/// [`SmtpConfigBuilder::use_tls`] wins.
+///
+/// [`SmtpConfig::from_env`] remains a host helper that loads `UF_SMTP_*` / `UF_EMAIL_*` once at
+/// boot—do not call it on every send.
+///
+/// # Examples
+///
+/// Mailpit-style local relay (no TLS, no auth):
+///
+/// ```
+/// use lepton_smtp::SmtpConfig;
+///
+/// # fn main() -> Result<(), lepton_smtp::EmailDeliveryError> {
+/// let config = SmtpConfig::builder()
+///     .host("127.0.0.1")
+///     .port(1025)
+///     .use_tls(false)
+///     .from_email("noreply@example.test")
+///     .build()?;
+/// assert_eq!(config.host, "127.0.0.1");
+/// assert!(!config.use_tls);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Debug)]
 pub struct SmtpConfig {
     /// SMTP relay hostname.
@@ -32,6 +63,12 @@ impl SmtpConfig {
     }
 
     /// Load from `UF_SMTP_*` / `UF_EMAIL_*` env vars (host helper).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EmailDeliveryError::ConfigError`] when required env vars are missing or
+    /// invalid (`reason_class=missing_field` or `invalid_port`), or when builder validation
+    /// fails (`incomplete_credentials`).
     pub fn from_env() -> Result<Self, EmailDeliveryError> {
         let host = std::env::var("UF_SMTP_HOST")
             .map_err(|_| EmailDeliveryError::config("missing_field", "Missing UF_SMTP_HOST"))?;
@@ -86,6 +123,23 @@ impl SmtpConfig {
 /// `from_name` (default `Orbital`). Username and password must both be set or both omitted.
 /// TLS defaults to `true` when credentials are set, else `false`; an explicit [`use_tls`](Self::use_tls)
 /// wins.
+///
+/// # Examples
+///
+/// ```
+/// use lepton_smtp::SmtpConfig;
+///
+/// # fn main() -> Result<(), lepton_smtp::EmailDeliveryError> {
+/// let config = SmtpConfig::builder()
+///     .host("127.0.0.1")
+///     .port(1025)
+///     .use_tls(false)
+///     .from_email("noreply@example.test")
+///     .build()?;
+/// assert_eq!(config.port, 1025);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Debug, Default)]
 pub struct SmtpConfigBuilder {
     host: Option<String>,
@@ -151,8 +205,11 @@ impl SmtpConfigBuilder {
     ///
     /// # Errors
     ///
-    /// Returns [`EmailDeliveryError::ConfigError`] when required fields are missing or
-    /// username/password are only partially set.
+    /// Returns [`EmailDeliveryError::ConfigError`] when:
+    ///
+    /// * `host`, `port`, or `from_email` is missing (`reason_class=missing_field`);
+    /// * username is set without password, or password without username
+    ///   (`reason_class=incomplete_credentials`).
     pub fn build(self) -> Result<SmtpConfig, EmailDeliveryError> {
         let host = self
             .host

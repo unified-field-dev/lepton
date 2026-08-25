@@ -1,10 +1,16 @@
 //! Direct-MX delivery configuration and builder.
+//!
+//! Direct MX delivers to the recipient domain's MX hosts without a relay. Prefer the
+//! crate-root [Direct MX guide](crate#direct-mx) for the full build → send → receipt path.
+//! Use [`DirectMxConfig::builder`] (required: `from_email`). Outbound port 25 is often
+//! required and frequently blocked on cloud networks.
 
 use crate::error::EmailDeliveryError;
 
 /// Configuration for [`crate::DirectMxAdapter`].
 ///
 /// Prefer [`DirectMxConfig::builder`]. [`DirectMxConfig::from_env`] remains as a host helper.
+/// Teaching path: crate-root [Direct MX guide](crate#direct-mx).
 #[derive(Clone, Debug)]
 pub struct DirectMxConfig {
     /// Port to connect to on each resolved MX host (default 25).

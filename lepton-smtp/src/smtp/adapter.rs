@@ -1,4 +1,8 @@
 //! SMTP relay [`EmailDeliveryService`] adapter.
+//!
+//! [`SmtpAdapter`] sends through a configured SMTP server. Prefer constructing it via
+//! [`crate::EmailServiceBuilder::smtp`] at host boot; use [`SmtpAdapter::new`] when you need
+//! the concrete type.
 
 use async_trait::async_trait;
 use lettre::transport::smtp::authentication::Credentials;
@@ -13,6 +17,44 @@ use crate::service::EmailDeliveryService;
 use crate::smtp::config::SmtpConfig;
 
 /// [`EmailDeliveryService`] that relays mail through a configured SMTP server.
+///
+/// Use for Mailpit or a production SMTP host after building [`SmtpConfig`]. On success,
+/// [`send`](EmailDeliveryService::send) returns a [`DeliveryReceipt`] with `provider = "smtp"`.
+/// Tracing logs driver, operation, outcome, and host—never recipient, body, or password.
+///
+/// Local Mailpit: `host = "127.0.0.1"`, `port = 1025`, `use_tls = false`. Validate with
+/// `UF_MAILPIT=1 cargo test -p lepton-smtp --test smtp_mailpit` when Docker is available.
+///
+/// # Examples
+///
+/// ```no_run
+/// use lepton_smtp::{
+///     verification_email_envelope, EmailDeliveryService, EmailServiceBuilder, SmtpConfig,
+///     VerificationEmailFlow,
+/// };
+///
+/// # async fn run() -> Result<(), lepton_smtp::EmailDeliveryError> {
+/// let email = EmailServiceBuilder::new()
+///     .smtp(
+///         SmtpConfig::builder()
+///             .host("127.0.0.1")
+///             .port(1025)
+///             .use_tls(false)
+///             .from_email("noreply@example.test")
+///             .build()?,
+///     )
+///     .build()?;
+///
+/// let message = verification_email_envelope(
+///     "reader@example.test",
+///     "123456",
+///     VerificationEmailFlow::Signup,
+/// );
+/// let receipt = email.send(&message).await?;
+/// assert_eq!(receipt.provider, "smtp");
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Debug)]
 pub struct SmtpAdapter {
     cfg: SmtpConfig,
@@ -20,6 +62,8 @@ pub struct SmtpAdapter {
 
 impl SmtpAdapter {
     /// Construct from [`SmtpConfig`].
+    ///
+    /// Prefer [`crate::EmailServiceBuilder::smtp`] when injecting `Arc<dyn EmailDeliveryService>`.
     #[must_use]
     pub const fn new(cfg: SmtpConfig) -> Self {
         Self { cfg }
@@ -32,6 +76,15 @@ impl EmailDeliveryService for SmtpAdapter {
         EmailDriver::Smtp
     }
 
+    /// Deliver `envelope` through the configured SMTP relay.
+    ///
+    /// # Errors
+    ///
+    /// * [`EmailDeliveryError::ConfigError`] — invalid TLS relay host (`reason_class=invalid_host`)
+    ///   or message construction failure.
+    /// * [`EmailDeliveryError::TransportError`] — connection or protocol failure
+    ///   (`reason_class=transport_error`). Retry only if your ops policy treats the failure as
+    ///   transient; this path does not return [`EmailDeliveryError::Transient`].
     async fn send(&self, envelope: &EmailEnvelope) -> Result<DeliveryReceipt, EmailDeliveryError> {
         let result = self.send_inner(envelope).await;
         #[cfg(feature = "spectra")]

@@ -1,4 +1,8 @@
 //! Twilio `SendGrid` email configuration and builder.
+//!
+//! Requires the `twilio` Cargo feature. Prefer the crate-root
+//! [Twilio `SendGrid` guide](crate#twilio-sendgrid) for prerequisites, send → receipt, and
+//! provider/transient errors. Credentials are `SendGrid` API keys, not SMS Account SID.
 
 use crate::error::EmailDeliveryError;
 
@@ -11,7 +15,8 @@ pub const TWILIO_EMAIL_API_KEY_ENV: &str = "UF_TWILIO_EMAIL_API_KEY";
 /// Plain `SendGrid` credentials / sender identity for [`super::TwilioEmailAdapter`].
 ///
 /// Twilio transactional email uses `SendGrid` Mail Send. Credentials differ from SMS
-/// Account SID / Auth Token. [`Debug`] redacts `api_key`.
+/// Account SID / Auth Token. [`Debug`] redacts `api_key`. Teaching path: crate-root
+/// [Twilio `SendGrid` guide](crate#twilio-sendgrid).
 #[derive(Clone)]
 pub struct TwilioEmailConfig {
     /// `SendGrid` API key (Bearer token; never log).

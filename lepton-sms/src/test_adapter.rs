@@ -1,4 +1,29 @@
 //! In-memory SMS adapter for test assertions (captures envelopes).
+//!
+//! Prefer a shared [`TestSmsAdapter`] via [`crate::SmsServiceBuilder::adapter`] when tests
+//! need [`TestSmsAdapter::recorded`]. Teaching path: crate-root [Test guide](crate#test).
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use std::sync::Arc;
+//! use lepton_sms::{SmsDeliveryService, SmsEnvelope, SmsServiceBuilder, TestSmsAdapter};
+//!
+//! # async fn run() -> Result<(), lepton_sms::SmsDeliveryError> {
+//! let sink = Arc::new(TestSmsAdapter::new());
+//! let sms = SmsServiceBuilder::new().adapter(sink.clone()).build()?;
+//! let receipt = sms
+//!     .send(&SmsEnvelope {
+//!         to_e164: "+15551234567".into(),
+//!         body: "hello".into(),
+//!         otp_code: None,
+//!     })
+//!     .await?;
+//! assert_eq!(receipt.provider, "test");
+//! assert_eq!(sink.recorded().len(), 1);
+//! # Ok(())
+//! # }
+//! ```
 
 use async_trait::async_trait;
 use std::sync::Mutex;
@@ -8,6 +33,9 @@ use crate::error::SmsDeliveryError;
 use crate::service::SmsDeliveryService;
 
 /// [`SmsDeliveryService`] that records envelopes in memory for test asserts.
+///
+/// On success, [`SmsDeliveryReceipt::provider`] is `"test"`. See the crate-root
+/// [Test guide](crate#test).
 #[derive(Debug, Default)]
 pub struct TestSmsAdapter {
     messages: Mutex<Vec<SmsEnvelope>>,
@@ -80,19 +108,18 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_sms_records_message_happy_path() {
+    async fn test_adapter_records_envelopes() {
         let adapter = TestSmsAdapter::new();
         adapter
             .send(&SmsEnvelope {
                 to_e164: "+15551234567".into(),
-                body: "test-marker-otp".into(),
-                otp_code: Some("123456".into()),
+                body: "a".into(),
+                otp_code: None,
             })
             .await
-            .expect("test send");
-        let recorded = adapter.recorded();
-        assert_eq!(recorded.len(), 1);
-        assert_eq!(recorded[0].to_e164, "+15551234567");
-        assert!(recorded[0].body.contains("test-marker-otp"));
+            .expect("send");
+        assert_eq!(adapter.recorded().len(), 1);
+        adapter.clear();
+        assert!(adapter.recorded().is_empty());
     }
 }

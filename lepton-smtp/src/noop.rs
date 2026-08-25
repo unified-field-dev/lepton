@@ -1,4 +1,32 @@
 //! No-op email adapter for local development and CI.
+//!
+//! [`NoopEmailAdapter`] accepts every [`crate::EmailEnvelope`] and returns a
+//! [`crate::DeliveryReceipt`] with `provider = "noop"`. It never returns a send error.
+//! Build it with [`crate::EmailServiceBuilder::noop`], then [`crate::EmailServiceBuilder::build`].
+//!
+//! Teaching path: crate-root [Noop guide](crate#noop). Runnable example:
+//! `cargo run -p lepton-smtp --example noop_send`.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use lepton_smtp::{
+//!     verification_email_envelope, EmailDeliveryService, EmailServiceBuilder,
+//!     VerificationEmailFlow,
+//! };
+//!
+//! # async fn run() -> Result<(), lepton_smtp::EmailDeliveryError> {
+//! let email = EmailServiceBuilder::new().noop().build()?;
+//! let message = verification_email_envelope(
+//!     "reader@example.test",
+//!     "123456",
+//!     VerificationEmailFlow::Signup,
+//! );
+//! let receipt = email.send(&message).await?;
+//! assert_eq!(receipt.provider, "noop");
+//! # Ok(())
+//! # }
+//! ```
 
 use async_trait::async_trait;
 
@@ -7,7 +35,10 @@ use crate::envelope::{DeliveryReceipt, EmailEnvelope};
 use crate::error::EmailDeliveryError;
 use crate::service::EmailDeliveryService;
 
-/// [`EmailDeliveryService`] that accepts mail without sending it (local dev / CI).
+/// [`EmailDeliveryService`] that accepts mail without sending it (local / CI).
+///
+/// On success, [`DeliveryReceipt::provider`] is `"noop"`. See the crate-root
+/// [Noop guide](crate#noop) for the full first-success path.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NoopEmailAdapter;
 

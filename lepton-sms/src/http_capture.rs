@@ -1,4 +1,7 @@
 //! HTTP capture SMS adapter (POSTs envelopes to a lab sink).
+//!
+//! Prefer the crate-root [HTTP capture guide](crate#http-capture) for prerequisites
+//! (sink on `:8099`), send → receipt (`provider = "http_capture"`), and sink errors.
 
 use async_trait::async_trait;
 use serde::Serialize;
@@ -19,16 +22,30 @@ struct CaptureBody<'a> {
 
 /// [`SmsDeliveryService`] that POSTs JSON envelopes to an HTTP capture sink.
 ///
+/// # Errors
+///
+/// Config / E.164 validation failures, plus transport / rejected / transient mapping for
+/// sink HTTP responses ([`SmsDeliveryError::is_transient`]).
+///
 /// # Examples
 ///
 /// ```no_run
-/// use lepton_sms::{HttpCaptureSmsConfig, SmsServiceBuilder};
+/// use lepton_sms::{
+///     HttpCaptureSmsConfig, SmsDeliveryService, SmsEnvelope, SmsServiceBuilder,
+/// };
 ///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # async fn run() -> Result<(), lepton_sms::SmsDeliveryError> {
 /// let sms = SmsServiceBuilder::new()
 ///     .http_capture(HttpCaptureSmsConfig::new("http://127.0.0.1:8099")?)
 ///     .build()?;
-/// let _ = sms;
+/// let receipt = sms
+///     .send(&SmsEnvelope {
+///         to_e164: "+15551234567".into(),
+///         body: "lab capture".into(),
+///         otp_code: Some("123456".into()),
+///     })
+///     .await?;
+/// assert_eq!(receipt.provider, "http_capture");
 /// # Ok(())
 /// # }
 /// ```

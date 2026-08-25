@@ -1,4 +1,7 @@
 //! Email delivery trait and service builder.
+//!
+//! Hosts construct an [`EmailDeliveryService`] once with [`EmailServiceBuilder`], then call
+//! [`EmailDeliveryService::send`] with an [`EmailEnvelope`].
 
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -14,12 +17,25 @@ use crate::smtp::{SmtpAdapter, SmtpConfig};
 use crate::twilio::{TwilioEmailAdapter, TwilioEmailConfig};
 
 /// Sends [`EmailEnvelope`]s via a specific transport ([`SmtpAdapter`], [`DirectMxAdapter`],
-/// or [`NoopEmailAdapter`]).
+/// [`NoopEmailAdapter`], or Twilio when enabled).
+///
+/// # Contract
+///
+/// * `driver` reports which [`EmailDriver`] this instance represents.
+/// * `send` delivers `envelope` and returns a [`DeliveryReceipt`] on success.
+/// * Implementations must not log recipient addresses, bodies, or credentials in tracing fields.
 #[async_trait]
 pub trait EmailDeliveryService: Send + Sync {
     /// Which [`EmailDriver`] this implementation represents.
     fn driver(&self) -> EmailDriver;
-    /// Send `envelope`, returning a [`DeliveryReceipt`] on success.
+
+    /// Deliver `envelope`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EmailDeliveryError`] when configuration is incomplete for a late check,
+    /// the transport fails, the provider rejects the message, or a transient error occurs.
+    /// Callers may use [`EmailDeliveryError::is_transient`] to decide on retry.
     async fn send(&self, envelope: &EmailEnvelope) -> Result<DeliveryReceipt, EmailDeliveryError>;
 }
 
@@ -30,10 +46,36 @@ pub trait EmailDeliveryService: Send + Sync {
 ///
 /// # Examples
 ///
-/// ```no_run
-/// use lepton_smtp::{EmailServiceBuilder, SmtpConfig};
+/// Noop path (send and inspect the receipt):
 ///
-/// # fn main() -> Result<(), lepton_smtp::EmailDeliveryError> {
+/// ```no_run
+/// use lepton_smtp::{
+///     verification_email_envelope, EmailDeliveryService, EmailServiceBuilder,
+///     VerificationEmailFlow,
+/// };
+///
+/// # async fn run() -> Result<(), lepton_smtp::EmailDeliveryError> {
+/// let email = EmailServiceBuilder::new().noop().build()?;
+/// let message = verification_email_envelope(
+///     "reader@example.test",
+///     "123456",
+///     VerificationEmailFlow::Signup,
+/// );
+/// let receipt = email.send(&message).await?;
+/// assert_eq!(receipt.provider, "noop");
+/// # Ok(())
+/// # }
+/// ```
+///
+/// SMTP relay (Mailpit-style local host):
+///
+/// ```no_run
+/// use lepton_smtp::{
+///     verification_email_envelope, EmailDeliveryService, EmailServiceBuilder, SmtpConfig,
+///     VerificationEmailFlow,
+/// };
+///
+/// # async fn run() -> Result<(), lepton_smtp::EmailDeliveryError> {
 /// let email = EmailServiceBuilder::new()
 ///     .smtp(
 ///         SmtpConfig::builder()
@@ -44,7 +86,14 @@ pub trait EmailDeliveryService: Send + Sync {
 ///             .build()?,
 ///     )
 ///     .build()?;
-/// let _ = email.driver();
+///
+/// let message = verification_email_envelope(
+///     "reader@example.test",
+///     "123456",
+///     VerificationEmailFlow::Signup,
+/// );
+/// let receipt = email.send(&message).await?;
+/// assert_eq!(receipt.provider, "smtp");
 /// # Ok(())
 /// # }
 /// ```
@@ -65,7 +114,10 @@ impl EmailServiceBuilder {
         Self::default()
     }
 
-    /// Configure the SMTP relay adapter.
+    /// Select the SMTP relay adapter with a validated [`SmtpConfig`].
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [SMTP guide](crate#smtp-mailpit-or-relay).
     #[must_use]
     pub fn smtp(mut self, cfg: SmtpConfig) -> Self {
         self.smtp = Some(cfg);
@@ -73,7 +125,10 @@ impl EmailServiceBuilder {
         self
     }
 
-    /// Configure the direct-MX adapter.
+    /// Select the direct-MX adapter with a validated [`DirectMxConfig`].
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [Direct MX guide](crate#direct-mx).
     #[must_use]
     pub fn direct_mx(mut self, cfg: DirectMxConfig) -> Self {
         self.direct_mx = Some(cfg);
@@ -81,7 +136,11 @@ impl EmailServiceBuilder {
         self
     }
 
-    /// Configure the Twilio `SendGrid` adapter (`feature = "twilio"`).
+    /// Select the Twilio `SendGrid` adapter (`feature = "twilio"`) with a validated
+    /// [`TwilioEmailConfig`].
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [Twilio `SendGrid` guide](crate#twilio-sendgrid).
     #[cfg(feature = "twilio")]
     #[must_use]
     pub fn twilio(mut self, cfg: TwilioEmailConfig) -> Self {
@@ -90,7 +149,10 @@ impl EmailServiceBuilder {
         self
     }
 
-    /// Use the no-op adapter (local / CI).
+    /// Select the no-op adapter (local / CI). Does not contact a network.
+    ///
+    /// Still call [`build`](Self::build) after this. Teaching path: crate-root
+    /// [Noop guide](crate#noop).
     #[must_use]
     pub const fn noop(mut self) -> Self {
         self.force_noop = true;
@@ -108,6 +170,11 @@ impl EmailServiceBuilder {
     /// Load driver + matching config from process environment (host helper).
     ///
     /// When `UF_EMAIL_DRIVER` is unset and `UF_SMTP_HOST` is empty, selects noop.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EmailDeliveryError::ConfigError`] when env values are missing or invalid
+    /// for the selected driver.
     pub fn from_env() -> Result<Self, EmailDeliveryError> {
         let driver = EmailDriver::from_env()?;
         let mut builder = Self::new().driver(driver);
@@ -129,12 +196,14 @@ impl EmailServiceBuilder {
         Ok(builder)
     }
 
-    /// Build an [`Arc`] service for injection into auth / host context.
+    /// Build an [`Arc`] service for injection into the host.
     ///
     /// # Errors
     ///
-    /// Returns [`EmailDeliveryError::ConfigError`] when the selected driver is missing
-    /// its required config.
+    /// Returns [`EmailDeliveryError::ConfigError`] when no driver/config was selected, or
+    /// when the selected driver is missing its required config (`reason_class=missing_driver`
+    /// or `missing_config`). Fix by calling [`noop`](Self::noop), [`smtp`](Self::smtp),
+    /// [`direct_mx`](Self::direct_mx), or `twilio` (Cargo feature `twilio`) before `build`.
     pub fn build(self) -> Result<Arc<dyn EmailDeliveryService>, EmailDeliveryError> {
         let driver = self.resolve_driver()?;
         tracing::info!(
@@ -222,6 +291,11 @@ impl EmailDeliveryService for BoxedArcEmailService {
 ///
 /// Returns `Box` for compatibility with existing call sites. New code should prefer
 /// [`EmailServiceBuilder::build`] (`Arc`).
+///
+/// # Errors
+///
+/// Propagates [`EmailDeliveryError::ConfigError`] from [`EmailServiceBuilder::from_env`] or
+/// [`EmailServiceBuilder::build`].
 pub fn build_email_service_from_env() -> Result<Box<dyn EmailDeliveryService>, EmailDeliveryError> {
     let service = EmailServiceBuilder::from_env()?.build()?;
     Ok(Box::new(BoxedArcEmailService(service)))

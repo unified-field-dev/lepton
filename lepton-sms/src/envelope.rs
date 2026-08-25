@@ -1,8 +1,15 @@
 //! SMS envelope and delivery receipt types.
+//!
+//! Build an [`SmsEnvelope`], pass it to [`crate::SmsDeliveryService::send`], then inspect
+//! the [`SmsDeliveryReceipt`]. Destination numbers must pass [`validate_e164`]. Teaching
+//! paths start at the crate-root [Noop guide](crate#noop).
 
 use crate::error::SmsDeliveryError;
 
 /// A single SMS to send via an [`crate::SmsDeliveryService`].
+///
+/// Set `to_e164` (E.164), `body`, and optionally `otp_code` (required for Twilio Verify
+/// `CustomCode`; Messages / Noop / Test may ignore it).
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct SmsEnvelope {
     /// Destination phone number in E.164 form (`+[country][subscriber]`).
@@ -16,6 +23,10 @@ pub struct SmsEnvelope {
 }
 
 /// Successful SMS delivery outcome.
+///
+/// Returned after a successful [`crate::SmsDeliveryService::send`]. `provider` names the
+/// path that accepted the message (for example `noop`, `test`, `http_capture`, `twilio`,
+/// or `twilio_verify`). `message_id` is set when the provider assigns one.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct SmsDeliveryReceipt {
     /// Adapter / provider identifier (e.g. `noop`, `test`).

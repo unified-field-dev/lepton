@@ -1,4 +1,7 @@
 //! Live Twilio `SendGrid` Mail Send [`EmailDeliveryService`] adapter.
+//!
+//! Requires the `twilio` Cargo feature. Prefer the crate-root
+//! [Twilio `SendGrid` guide](crate#twilio-sendgrid) for the full credential → send → receipt path.
 
 use async_trait::async_trait;
 use serde_json::json;
@@ -14,22 +17,36 @@ use super::http::{mail_send_url, map_http_status};
 
 /// [`EmailDeliveryService`] that sends via Twilio `SendGrid` Mail Send v3.
 ///
+/// # Errors
+///
+/// Config errors when credentials/client setup fail; provider rejection and transient
+/// classification for HTTP/status failures ([`EmailDeliveryError::is_transient`]).
+///
 /// # Examples
 ///
 /// ```no_run
-/// use lepton_smtp::{EmailServiceBuilder, TwilioEmailConfig};
+/// use lepton_smtp::{
+///     verification_email_envelope, EmailDeliveryService, EmailServiceBuilder, TwilioEmailConfig,
+///     VerificationEmailFlow,
+/// };
 ///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 /// let email = EmailServiceBuilder::new()
 ///     .twilio(
 ///         TwilioEmailConfig::builder()
 ///             .api_key(std::env::var("UF_TWILIO_EMAIL_API_KEY")?)
-///             .from_email("noreply@example.com")
+///             .from_email("noreply@example.test")
 ///             .from_name("App")
 ///             .build()?,
 ///     )
 ///     .build()?;
-/// let _ = email;
+/// let message = verification_email_envelope(
+///     "reader@example.test",
+///     "123456",
+///     VerificationEmailFlow::Signup,
+/// );
+/// let receipt = email.send(&message).await?;
+/// assert_eq!(receipt.provider, "twilio");
 /// # Ok(())
 /// # }
 /// ```

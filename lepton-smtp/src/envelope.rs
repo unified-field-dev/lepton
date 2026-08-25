@@ -1,20 +1,17 @@
-//! Email envelopes, receipts, and auth-flow helpers.
+//! Message envelopes, stock helpers, and delivery receipts.
 //!
-//! Stock helpers ([`verification_email_envelope`], [`password_reset_email_envelope`])
-//! fill subject and body. For product copy, construct [`EmailEnvelope`] yourself (or
-//! mutate a stock helper's fields) and pass it to [`crate::EmailDeliveryService::send`].
-
-/// Successful delivery outcome from an [`crate::EmailDeliveryService`].
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct DeliveryReceipt {
-    /// Identifier of the provider/path that delivered the message (e.g. `smtp`, `noop`,
-    /// or `direct_mx:<host>`).
-    pub provider: String,
-    /// Provider-assigned message id, if any.
-    pub message_id: Option<String>,
-}
+//! Build an [`EmailEnvelope`] (hand-written or via a stock helper), pass it to
+//! [`crate::EmailDeliveryService::send`], then inspect the [`DeliveryReceipt`].
+//!
+//! Stock helpers ([`verification_email_envelope`], [`password_reset_email_envelope`]) are the
+//! usual next step after a backend guide ([Noop](crate#noop), [SMTP](crate#smtp-mailpit-or-relay)).
+//! Runnable Noop path: `cargo run -p lepton-smtp --example noop_send`.
 
 /// A single email to send via an [`crate::EmailDeliveryService`].
+///
+/// Set `to`, `subject`, `text_body`, and `html_body`. Stock helpers
+/// ([`verification_email_envelope`], [`password_reset_email_envelope`]) fill subject and body
+/// for common flows; customize fields when product copy differs.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmailEnvelope {
     /// Recipient email address.
@@ -27,7 +24,21 @@ pub struct EmailEnvelope {
     pub html_body: String,
 }
 
-/// Which auth flow triggered a verification email (selects the subject line).
+/// Successful delivery outcome from an [`crate::EmailDeliveryService`].
+///
+/// Returned after a successful [`crate::EmailDeliveryService::send`]. `provider` names the
+/// path that accepted the message (for example `noop`, `smtp`, or `direct_mx:<host>`).
+/// `message_id` is set when the provider assigns one.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct DeliveryReceipt {
+    /// Identifier of the provider/path that delivered the message (e.g. `smtp`, `noop`,
+    /// or `direct_mx:<host>`).
+    pub provider: String,
+    /// Provider-assigned message id, if any.
+    pub message_id: Option<String>,
+}
+
+/// Which auth-shaped flow triggered a verification email (selects the subject line).
 #[derive(Clone, Copy, Debug)]
 pub enum VerificationEmailFlow {
     /// Initial signup verification.
@@ -57,11 +68,25 @@ pub fn greeting_name_from_email(email: &str) -> &str {
         .unwrap_or(email)
 }
 
-/// Build the [`EmailEnvelope`] for a verification-code email for the given `flow`.
+/// Build an [`EmailEnvelope`] for a verification-code email for the given `flow`.
 ///
 /// `recipient_name` is the greeting name. When `None`, the local-part of
 /// `recipient_email` is used. The body is code-first; clickable verify URLs are
 /// deferred until a host route exists.
+///
+/// # Examples
+///
+/// ```
+/// use lepton_smtp::{verification_email_envelope, VerificationEmailFlow};
+///
+/// let envelope = verification_email_envelope(
+///     "user@example.test",
+///     "tok123",
+///     VerificationEmailFlow::Signup,
+/// );
+/// assert_eq!(envelope.subject, "Your verification code");
+/// assert!(envelope.text_body.contains("tok123"));
+/// ```
 #[must_use]
 pub fn verification_email_envelope(
     recipient_email: &str,
@@ -97,7 +122,7 @@ pub fn verification_email_envelope_named(
     }
 }
 
-/// Build the [`EmailEnvelope`] for a password-reset-link email.
+/// Build an [`EmailEnvelope`] for a password-reset-link email.
 #[must_use]
 pub fn password_reset_email_envelope(recipient_email: &str, reset_link: &str) -> EmailEnvelope {
     let name = greeting_name_from_email(recipient_email);

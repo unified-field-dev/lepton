@@ -105,6 +105,8 @@ cargo leptos end-to-end --project lepton-auth-ui-e2e
 Teaching examples (one-shot, exit 0):
 
 ```bash
+CARGO_BUILD_JOBS=1 cargo run -p lepton-smtp --example noop_send
+CARGO_BUILD_JOBS=1 cargo run -p lepton-sms --example noop_send
 CARGO_BUILD_JOBS=1 cargo run -p lepton-auth --example password_and_token --features ssr
 CARGO_BUILD_JOBS=1 cargo run -p lepton-auth --example auth_flows_noop_smtp --features ssr,email
 CARGO_BUILD_JOBS=1 cargo check -p lepton-auth --example auth_contacts_confirm --features ssr

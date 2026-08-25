@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
-description = "Provider-agnostic SMS delivery for Lepton auth flows (Noop/Test; optional Twilio)"
+description = "Provider-agnostic SMS delivery (Noop/Test/HTTP capture; optional Twilio)"
 publish = false
 
 [features]

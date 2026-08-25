@@ -1,4 +1,30 @@
 //! No-op SMS adapter for local development and CI.
+//!
+//! [`NoopSmsAdapter`] validates E.164 and returns a [`crate::SmsDeliveryReceipt`] with
+//! `provider = "noop"`. Build it with [`crate::SmsServiceBuilder::noop`], then
+//! [`crate::SmsServiceBuilder::build`].
+//!
+//! Teaching path: crate-root [Noop guide](crate#noop). Runnable example:
+//! `cargo run -p lepton-sms --example noop_send`.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use lepton_sms::{SmsDeliveryService, SmsEnvelope, SmsServiceBuilder};
+//!
+//! # async fn run() -> Result<(), lepton_sms::SmsDeliveryError> {
+//! let sms = SmsServiceBuilder::new().noop().build()?;
+//! let receipt = sms
+//!     .send(&SmsEnvelope {
+//!         to_e164: "+15551234567".into(),
+//!         body: "Your code is 123456".into(),
+//!         otp_code: Some("123456".into()),
+//!     })
+//!     .await?;
+//! assert_eq!(receipt.provider, "noop");
+//! # Ok(())
+//! # }
+//! ```
 
 use async_trait::async_trait;
 
@@ -6,7 +32,10 @@ use crate::envelope::{validate_e164, SmsDeliveryReceipt, SmsEnvelope};
 use crate::error::SmsDeliveryError;
 use crate::service::SmsDeliveryService;
 
-/// [`SmsDeliveryService`] that accepts SMS without sending it.
+/// [`SmsDeliveryService`] that accepts SMS without sending it (local / CI).
+///
+/// On success, [`SmsDeliveryReceipt::provider`] is `"noop"`. Invalid E.164 returns
+/// [`SmsDeliveryError::ConfigError`]. See the crate-root [Noop guide](crate#noop).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NoopSmsAdapter;
 

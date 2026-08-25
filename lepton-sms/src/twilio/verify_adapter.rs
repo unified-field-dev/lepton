@@ -1,4 +1,8 @@
 //! Live Twilio Verify custom-code SMS adapter.
+//!
+//! Requires the `twilio` Cargo feature and Custom Verification Code on the Verify Service.
+//! Prefer the crate-root [Twilio Verify guide](crate#twilio-verify). Valence (or the host)
+//! still verifies the OTP; this adapter does not call `VerificationCheck`.
 
 use async_trait::async_trait;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
@@ -20,18 +24,31 @@ struct TwilioVerificationResponse {
 /// [`SmsDeliveryService`] that creates a Twilio Verify verification with `CustomCode`.
 ///
 /// Does **not** call `VerificationCheck` — Valence still consumes the OTP. The Verify
-/// Service must have Custom Verification Code enabled.
+/// Service must have Custom Verification Code enabled. [`SmsEnvelope::otp_code`] must be
+/// 4..=10 characters.
+///
+/// # Errors
+///
+/// Config errors for missing/invalid `otp_code` or credentials; provider rejection and
+/// transient classification for HTTP/status failures.
 ///
 /// # Examples
 ///
 /// ```no_run
-/// use lepton_sms::{SmsServiceBuilder, TwilioVerifyConfig};
+/// use lepton_sms::{SmsDeliveryService, SmsEnvelope, SmsServiceBuilder, TwilioVerifyConfig};
 ///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 /// let sms = SmsServiceBuilder::new()
 ///     .twilio_verify(TwilioVerifyConfig::from_env()?)
 ///     .build()?;
-/// let _ = sms;
+/// let receipt = sms
+///     .send(&SmsEnvelope {
+///         to_e164: "+15551234567".into(),
+///         body: "ignored for Verify body channel".into(),
+///         otp_code: Some("123456".into()),
+///     })
+///     .await?;
+/// assert_eq!(receipt.provider, "twilio_verify");
 /// # Ok(())
 /// # }
 /// ```
