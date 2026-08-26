@@ -8,7 +8,7 @@
 //!
 //! # Features
 //!
-//! - **Boot delivery** — Provides injected email/SMS and a public base URL through
+//! - **Injected delivery services** — Provides injected email/SMS and a public base URL through
 //!   [`services`] so send paths resolve adapters at runtime. Use this when wiring SSR
 //!   boot before any verification mail ([Boot delivery](#boot-delivery-email-only)).
 //! - **Authenticated server fns** — Gates product server functions on the session with

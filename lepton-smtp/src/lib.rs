@@ -7,7 +7,7 @@
 //!
 //! # Features
 //!
-//! - **Builder-first delivery** — Provides a single boot path: build once with
+//! - **Builder-first SMTP** — Provides a single boot path: build once with
 //!   [`EmailServiceBuilder`], inject [`EmailDeliveryService`], then send. Start with
 //!   [Noop](#noop) for local and CI sends without a network.
 //! - **Stock envelopes** — Offers ready verification and password-reset bodies so auth

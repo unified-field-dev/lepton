@@ -7,7 +7,7 @@
 //!
 //! # Features
 //!
-//! - **Builder-first delivery** — Provides a single boot path: build once with
+//! - **Builder-first SMS** — Provides a single boot path: build once with
 //!   [`SmsServiceBuilder`], inject [`SmsDeliveryService`], then send. Start with
 //!   [Noop](#noop) for local and CI sends without a network.
 //! - **E.164 validation** — Validates destination numbers on send so bad addresses fail

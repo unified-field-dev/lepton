@@ -2,7 +2,7 @@
 //!
 //! # Features
 //!
-//! - **In-memory lab boot** — Builds Valence and test delivery services for CI without
+//! - **In-memory lab harness** — Builds Valence and test delivery services for CI without
 //!   Docker. Start with [`boot::boot_lab`] on the [CI e2e](#ci-e2e) path.
 //! - **Signup → confirm** — Runs [`flow::run_signup_verify_flow`] when you need a full
 //!   signup through confirmation under Noop/Test delivery ([CI e2e](#ci-e2e)).
