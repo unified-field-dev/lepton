@@ -34,7 +34,7 @@
 //! without recipient or body fields. Call after the product send path when Spectra is
 //! already booted in the process.
 //!
-//! Prerequisites: boot Spectra in the host process first (embedded SQLite, mem
+//! Prerequisites: boot Spectra in the host process first (embedded `SQLite`, mem
 //! backends, or your Spectra install). Counters are best-effort and never fail
 //! the product path.
 //!
