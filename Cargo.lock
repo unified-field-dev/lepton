@@ -432,9 +432,9 @@ dependencies = [
 
 [[package]]
 name = "boson-backend-mem"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90321152be4d8846b172b7832fe70726d8464daf597aded73ae4e8a6e24f6b7e"
+checksum = "bbba54e3deaccd7c885622bc4bbd0b27be8fd19dc4f38096ca59585901be5d58"
 dependencies = [
  "async-trait",
  "boson-core",
@@ -444,9 +444,9 @@ dependencies = [
 
 [[package]]
 name = "boson-core"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c05889f4d61930ca18d699668435d1e7cf7394c0f2f0c363a6d4f381457baa"
+checksum = "27fb3f809eeb32444d9e0dc76c05e3d9f517a1e033dc614765c12e1a7603f2f9"
 dependencies = [
  "async-trait",
  "chrono",
@@ -458,9 +458,9 @@ dependencies = [
 
 [[package]]
 name = "boson-macros"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36c4e23b2d33f4107d9fddb4574e556e70cb1b3c154e55c1bf191b1cb9cbb76d"
+checksum = "81c30be406d92760b2b3f473e3265487866a50a92c3ff7cf9a671b43b730cb63"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -469,9 +469,9 @@ dependencies = [
 
 [[package]]
 name = "boson-runtime"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bee0934d8e42204c6c3f399b76535e4155fd7ccef39f1d943f1901505aa28c63"
+checksum = "72b0b0188bc2e2ae7820848cd3eac26b5298c50aa11b7670a17280f784e4d71d"
 dependencies = [
  "async-trait",
  "boson-core",
@@ -484,9 +484,9 @@ dependencies = [
 
 [[package]]
 name = "boson-telemetry"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af1f8ba93ccadb711a5109958a1d1f65662e79831538867d829ad42e6af21d61"
+checksum = "3883ce92413464ec45f0c2ae8339f0e9e1a3ef1f60854eed4824a605161f362e"
 dependencies = [
  "serde_json",
 ]
@@ -3255,8 +3255,9 @@ checksum = "8c04f5d74368e4d0dfe06c45c8627c81bd7c317d52762d118fb9b3076f6420fd"
 
 [[package]]
 name = "orbital-base-components"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbf6bab91ba8950ee2dec697ba155d718d9f71952aa603aba6a757df1aee9b60"
 dependencies = [
  "chrono",
  "icondata",
@@ -3277,8 +3278,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-charts"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae2497c10f35e99ed8ff69f03cac3b6ed714df4af881024fa7261465751715de"
 dependencies = [
  "bitflags 2.13.1",
  "chrono",
@@ -3302,8 +3304,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-core-components"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b00ba31f7602e58fcc7744daf81d8c52186882fc7e37affa976ac0d819010e19"
 dependencies = [
  "chrono",
  "icondata",
@@ -3324,8 +3327,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-data"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ffa5201d2e7afa3248d787605d8d5e2cf9adc0a75242a54269e61c32b95e18f"
 dependencies = [
  "chrono",
  "serde",
@@ -3333,8 +3337,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-datatable"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4bf9cd65dee10dea7c62b7ce69d8788e9f010e221ac292e0e2807b17909f810"
 dependencies = [
  "bitflags 2.13.1",
  "chrono",
@@ -3360,8 +3365,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-date-pickers"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1c03a4be19c2d4b33bc5c50a5019d74ba72ec17d7ab2be5e4794bd699810227"
 dependencies = [
  "bitflags 2.13.1",
  "chrono",
@@ -3380,8 +3386,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-discussion"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da491ce8bceac1ee50980607ed8ca3c65cc17d2a909b7ab3cfb972777a3a7f67"
 dependencies = [
  "ammonia",
  "bitflags 2.13.1",
@@ -3406,8 +3413,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-history"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64209bb1ce750d80d8889feb78bcd108773246d9f0e720d0992eb97284daec37"
 dependencies = [
  "bitflags 2.13.1",
  "chrono",
@@ -3432,8 +3440,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-macros"
-version = "0.1.3"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b50e38dd15d8318bfc07e267026aac01546237eb7774f8a288d6e4b00621949"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -3443,8 +3452,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-markdown"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7f04f48232a7e017ebefe4c7b998509d3146bbb7195d7f796b4e40c443edaa1"
 dependencies = [
  "ammonia",
  "pulldown-cmark",
@@ -3453,8 +3463,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-motion"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59444fcc38073666abfa190c9a5f2535b53014d3c6f6ad53c58a1e0eae723418"
 dependencies = [
  "icondata",
  "icondata_core",
@@ -3464,6 +3475,7 @@ dependencies = [
  "orbital-macros",
  "orbital-style",
  "pulldown-cmark",
+ "send_wrapper",
  "turf",
  "wasm-bindgen",
  "web-sys",
@@ -3471,8 +3483,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-paging"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eedb31747e6bc476377e4a3d3bfaf5107c1776aec6e1dde39b90c32b7210530"
 dependencies = [
  "leptos",
  "leptos-use",
@@ -3482,8 +3495,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-primitives"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1abfbc4910e940fb1a4c8a2ec464e9a2c35abdf46de34d8a4e4c5811b50a1050"
 dependencies = [
  "icondata",
  "icondata_core",
@@ -3506,8 +3520,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-scheduler"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0eb3daac1126a45ba19ca721b2e55db26722332f639700eccb9b260ec95980b"
 dependencies = [
  "bitflags 2.13.1",
  "chrono",
@@ -3531,8 +3546,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-style"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "152a1a9bc18007e833a7b797d3bd08a6e4a2ae0e9f57c081d9c97b577eb22b93"
 dependencies = [
  "cfg-if",
  "leptos",
@@ -3542,8 +3558,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-theme"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cdf57fe9aad49d5693a57b820cce49d12553f1b3486468af9d790579568f19a"
 dependencies = [
  "getset",
  "leptos",
@@ -3554,8 +3571,9 @@ dependencies = [
 
 [[package]]
 name = "orbital-tree"
-version = "0.1.2"
-source = "git+https://github.com/unified-field-dev/orbital?branch=main#fb1b0eca63315a7d7de92732acb6c8ddd02442e5"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40a600c62ffe15382d10e8062af5450302d99f4f17be7af363a28fe2a41d4f45"
 dependencies = [
  "icondata_core",
  "inventory",
@@ -3775,9 +3793,7 @@ dependencies = [
 
 [[package]]
 name = "photon-axum"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6ac6c4c097a48be28f7f6e0ef24f3cf3e7d4bc2d04afe5ce068cc1a7a2f8ed"
+version = "0.1.3"
 dependencies = [
  "axum",
  "futures",
@@ -3791,9 +3807,9 @@ dependencies = [
 
 [[package]]
 name = "photon-backend"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efde3538fef9c2ef1e44fee05ca636e4dee2667063bff1a56f84da36cb78ef6a"
+checksum = "51bbf7575ee4f8e7b1e61c2ab8114be793f92cbf4def7c3e17f533aaffe93d65"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -3818,9 +3834,7 @@ dependencies = [
 
 [[package]]
 name = "photon-leptos"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae4d2bb05d184bba3c18db789e747acc8fc42e8a52d03703061b50344a0e0754"
+version = "0.1.3"
 dependencies = [
  "cfg-if",
  "codee",
@@ -3840,9 +3854,7 @@ dependencies = [
 
 [[package]]
 name = "photon-leptos-macros"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f0877d430144da24da81c060c06220d38da4228fd3dcf794d454ddcb79e0146"
+version = "0.1.3"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -3852,9 +3864,9 @@ dependencies = [
 
 [[package]]
 name = "photon-macros"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0a8bf1b35ba7931fc4d518a39d659f8e846b76baf0de537efaea50b5ee3785e"
+checksum = "57bc69fc567436274d7c4a361e6f2a80557f91f05aa61b6e7b728e27d8516837"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3863,9 +3875,9 @@ dependencies = [
 
 [[package]]
 name = "photon-runtime"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98d4c162dcacd5bba35d6fd2c7d9cda59bd42fa31e996208c70235ac227d511c"
+checksum = "58d0f2af8bda1fa7aa8678558de391bbe107b930cad35e582897dbc435585dc2"
 dependencies = [
  "futures",
  "photon-backend",
@@ -3880,9 +3892,9 @@ dependencies = [
 
 [[package]]
 name = "photon-telemetry"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7afe9fb9043281e47d3b6241cf68f4bd7eb2faf1bc24c2aa7d4874aea0095bb3"
+checksum = "a5c5a39aabec7157deffc7a2001f9cf7996a1bf2234adcd7b3d9b78e74ff2f1c"
 dependencies = [
  "serde_json",
 ]
@@ -4918,9 +4930,9 @@ dependencies = [
 
 [[package]]
 name = "spectra-backend-mem"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c97031f7e711778544fcb440e92e06c0350d938b18f8dd8109bbfb1413d80857"
+checksum = "1a1d899ffb6f32a068a88b39a370a0f6d2788ee49852846cecd4aed433b93422"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4932,9 +4944,9 @@ dependencies = [
 
 [[package]]
 name = "spectra-macros"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09733ac1b5355932c85b0becb81bbc19e19ea03f08d91848cab108c88e4f5abb"
+checksum = "7122121054e9af9181d9f5f8ce3e03be1cf59c6f31e89d403b29b0dbd741553a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4943,9 +4955,9 @@ dependencies = [
 
 [[package]]
 name = "spectra-runtime"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d593df585b56359236e01f853408db3e62eb6f8a595333cb0d46495e92b12cd5"
+checksum = "89099623fa651d12e4db0d0a5194a7499bf1694c6ce3b300d4de8d4b8bc821d6"
 dependencies = [
  "chrono",
  "serde_json",
@@ -5889,9 +5901,9 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "uf-photon"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b4174ce6a43b9ecfea300641225f8c90d0fff38722a89b4723a78ea9c95fff"
+checksum = "e1fbb65aacc2ab5c22190945f301a7448719b02bda720cd60459c28113a39ffb"
 dependencies = [
  "photon-backend",
  "photon-macros",
@@ -5903,9 +5915,9 @@ dependencies = [
 
 [[package]]
 name = "uf-photon-core"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38847a1222f11b93492505ce9cb8a3a4799f70662f882a99fc1d9f757ac06b2c"
+checksum = "b810fbf7082a14953a9d0e00e3c268e17ab21cf7ba0f904a39713edf8572c3e7"
 dependencies = [
  "serde",
  "serde_json",
@@ -5923,9 +5935,9 @@ dependencies = [
 
 [[package]]
 name = "uf-spectra"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e761d1c48c49d3b07dd212565bbe22b60f08ef5cd5c4391b3307c216b758d65e"
+checksum = "ae2d1276fc5539bbbbe444cd4986bfc5902de9db15ebd359b39ab2432cffec2f"
 dependencies = [
  "chrono",
  "serde",
@@ -5938,9 +5950,9 @@ dependencies = [
 
 [[package]]
 name = "uf-spectra-core"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ba92a216ad609a55263df5678ff919d4ee8e40175c49ec7f543d1ba8e5ac4d2"
+checksum = "89957a056ad2cd8a395ae6ddac77a9c9cecb06281805a2652d4d6a9a76bf0ecb"
 dependencies = [
  "async-trait",
  "chrono",
