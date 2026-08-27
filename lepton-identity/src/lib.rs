@@ -111,7 +111,7 @@
 //!
 //! | Feature | Engine id on [`embedded_surreal::IDENTITY_DEFAULT_STORAGE`] |
 //! |---------|--------------------------------------------------------------|
-//! | `db-sqlite` (default) | `valence::SQLITE_ENGINE_ID` — local / embedded SQLite |
+//! | `db-sqlite` (default) | `valence::SQLITE_ENGINE_ID` — local / embedded `SQLite` |
 //! | `db-hybrid` | `valence::HYBRID_ENGINE_ID` — host router with mixed backends |
 //! | `test-utils` | Fault-injection hooks for side-effect contract tests |
 //!

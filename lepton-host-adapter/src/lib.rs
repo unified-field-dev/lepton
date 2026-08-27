@@ -79,7 +79,7 @@
 //! | Feature | Effect |
 //! |---------|--------|
 //! | `ssr` | Backend, middleware, Photon auth, files, and [`generated`] token models |
-//! | `db-sqlite` (default) | Forwarded to `lepton-identity` / Valence SQLite |
+//! | `db-sqlite` (default) | Forwarded to `lepton-identity` / Valence `SQLite` |
 //! | `db-hybrid` | Forwarded hybrid engine for host routers |
 //!
 //! # Further reading

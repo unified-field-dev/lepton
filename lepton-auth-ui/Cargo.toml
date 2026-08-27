@@ -16,7 +16,7 @@ orbital-core-components = { workspace = true }
 orbital-base-components = { workspace = true }
 orbital-motion = { workspace = true }
 turf = { workspace = true }
-# Keep lightningcss on parcel_selectors 0.28.1 (cssparser 0.33); see workspace pin.
+# Keep lightningcss on parcel_selectors 0.28.2 (cssparser 0.33); see workspace pin.
 parcel_selectors = { workspace = true }
 cfg-if = { workspace = true }
 tracing = { workspace = true }
