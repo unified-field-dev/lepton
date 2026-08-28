@@ -20,12 +20,12 @@
 //!   ([`factor` Examples](factor/index.html#examples)).
 //! - **Signup, OAuth, contacts, and devices** — Covers account creation and linked
 //!   identity surfaces in [`signup_api`], [`oauth`], [`contacts`], and [`devices`]
-//!   (wipe/erase under [`identity_delete`]; [Examples ladder](#examples-ladder)).
+//!   (wipe/erase under [`identity_delete`]; [Examples](#examples)).
 //! - **Tokens and policy** — Provides one-time tokens ([`token_helpers`]) and password /
 //!   audit helpers ([`security`]) for reset and policy checks
 //!   ([Boot delivery](#boot-delivery-email-only)).
 //! - **Durable delivery** — Enqueues mail/SMS through Boson when `boson-delivery` is on
-//!   so retries survive process restarts ([Examples ladder](#examples-ladder)).
+//!   so retries survive process restarts ([Examples](#examples)).
 //! - **Auth UI actions** — Exposes [`actions`] server functions consumed by
 //!   [`lepton_auth_ui`](../lepton_auth_ui/index.html). Mount the shell at
 //!   [Mount `AuthDialog`](../lepton_auth_ui/index.html#mount-authdialog-shell).
@@ -164,13 +164,12 @@
 //! Auth UI server functions in [`actions`] register through Leptos
 //! `generate_route_list` / `leptos_routes_with_context`.
 //!
-//! # Examples ladder
+//! # Examples
 //!
-//! | Level | Where |
-//! |-------|--------|
-//! | Highlight | [Boot delivery](#boot-delivery-email-only) |
-//! | Mid | [`factor` Examples](factor/index.html#examples); `examples/password_and_token` |
-//! | Detailed | `examples/auth_flows_noop_smtp`, `examples/auth_totp_enroll`, `tests/delivery_attempt.rs` |
+//! Start with [Boot delivery](#boot-delivery-email-only). [`factor` Examples](factor/index.html#examples)
+//! and `examples/password_and_token` cover challenge issue and verify flows. Runnable hosts:
+//! `examples/auth_flows_noop_smtp`, `examples/auth_totp_enroll`; durable delivery in
+//! `tests/delivery_attempt.rs`.
 //!
 //! # Further reading
 //!
