@@ -151,27 +151,3 @@ chrono = { version = "0.4", features = ["serde"] }
 webauthn-rs = { version = "0.5.5", default-features = false, features = ["danger-allow-state-serialisation"] }
 
 # Transitive kits may still git-pin older Valence/Boson/Photon; force one crates.io graph.
-[patch."https://github.com/unified-field-dev/valence"]
-uf-valence = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-core = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-codegen = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-macros = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-telemetry = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-backend-mem = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-backend-sqlite = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-uf-valence-backend-sql = { git = "https://github.com/unified-field-dev/valence", branch = "main" }
-
-[patch."https://github.com/unified-field-dev/boson"]
-boson-core = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
-boson-macros = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
-boson-runtime = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
-boson-telemetry = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
-boson-backend-mem = { git = "https://github.com/unified-field-dev/boson", branch = "main" }
-
-[patch."https://github.com/unified-field-dev/photon"]
-uf-photon = { git = "https://github.com/unified-field-dev/photon", branch = "main" }
-uf-photon-core = { git = "https://github.com/unified-field-dev/photon", branch = "main" }
-photon-runtime = { git = "https://github.com/unified-field-dev/photon", branch = "main" }
-photon-backend = { git = "https://github.com/unified-field-dev/photon", branch = "main" }
-photon-telemetry = { git = "https://github.com/unified-field-dev/photon", branch = "main" }
-photon-macros = { git = "https://github.com/unified-field-dev/photon", branch = "main" }
