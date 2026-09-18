@@ -2,7 +2,7 @@
 //!
 //! Authenticates the caller and checks ownership before creating System Valence
 //! `ProfilePhoto` records. Byte I/O runs through the platform `meson` crate's
-//! [`FileByteBackend`] trait (default [`LocalDiskBlobStore`]) — this module no
+//! [`crate::files::FileByteBackend`] trait (default [`crate::files::LocalDiskBlobStore`]) — this module no
 //! longer vendors its own duplicate store, so a host can share one backend
 //! across every `meson` `File`-trait consumer it mounts (lepton, finance,
 //! meson-app, …). Uploads go straight to the available store: lepton has no
@@ -17,7 +17,7 @@
 //! | Mount routes | [`crate::files::files_routes`] |
 //! | Upload | [`crate::files::upload_handler`] |
 //! | Serve | [`crate::files::serve_handler`] |
-//! | Bytes | [`FileByteBackend`], [`LocalDiskBlobStore`] (re-exported from `meson`) |
+//! | Bytes | [`crate::files::FileByteBackend`], [`crate::files::LocalDiskBlobStore`] (re-exported from `meson`) |
 //!
 //! # Examples
 //!
