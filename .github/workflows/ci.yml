@@ -63,6 +63,14 @@ jobs:
         run: cargo doc -p lepton-sms -p lepton-smtp --no-deps --features twilio
         env:
           RUSTDOCFLAGS: "-D warnings"
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+      - name: cargo deny
+        run: cargo deny check
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: cargo audit
+        run: cargo audit
 
   leptos-lints:
     runs-on: ubuntu-latest
