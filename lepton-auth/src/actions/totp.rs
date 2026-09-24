@@ -101,7 +101,7 @@ async fn user_has_enabled_totp(
 ) -> Result<bool, ServerFnError> {
     use lepton_host_adapter::generated::TotpFactor;
     let uid = valence::extract_id_from_record(user).unwrap_or_else(|_| user.id().to_string());
-    let factors = TotpFactor::get_from_user_id_used(
+    let factors = TotpFactor::get_from_user_id(
         &uid,
         valence,
         valence::use_!(r"On your **authenticator settings**, we **list your factors** so the page can show whether setup is already enabled. Only you see that status for your account."),

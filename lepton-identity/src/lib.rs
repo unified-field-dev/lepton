@@ -100,7 +100,7 @@
 //!
 //! async fn load_owner(order: &Order, valence: &Valence) -> valence::Result<()> {
 //!     let user = order
-//!         .get_user_used(
+//!         .get_user(
 //!             valence,
 //!             valence::use_!(r#"In this **docs example**, we **follow the order’s user link** so the sample can show how product rows load their owner. Readers of the crate docs only."#),
 //!         )

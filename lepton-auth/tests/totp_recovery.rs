@@ -35,7 +35,7 @@ async fn seed_user(valence: &valence::Valence) -> RecordId {
         now,
     )
     .expect("user");
-    let created = User::create_used(user, valence, valence::use_!(r"**Test:** Fixture **User** save for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("create user");
+    let created = User::create(user, valence, valence::use_!(r"**Test:** Fixture **User** save for `tests` so the suite can arrange and assert persistence behavior. CI and developers running the suite only.")).await.expect("create user");
     created.id().cloned().expect("user id")
 }
 
@@ -54,7 +54,7 @@ async fn consume_recovery_happy() {
         .expect("consume");
 
     let uid = bare_id_from_record(&user);
-    let rows = TotpRecoveryCode::get_from_user_id_used(
+    let rows = TotpRecoveryCode::get_from_user_id(
         &uid,
         &valence,
         valence::use_!(r"**Test:** Fixture **Totp Recovery Code** list for `totp_recovery` so the suite can assert one code was marked used after consume. CI and developers running the suite only."),
@@ -126,7 +126,7 @@ async fn disable_totp_after_enroll_happy() {
 
     disable_totp(&valence, &user).await.expect("disable");
     let uid = bare_id_from_record(&user);
-    let left = TotpFactor::get_from_user_id_used(
+    let left = TotpFactor::get_from_user_id(
         &uid,
         &valence,
         valence::use_!(r"**Test:** Fixture **Totp Factor** list for `totp_recovery` so the suite can assert disable removed every factor. CI and developers running the suite only."),
@@ -138,7 +138,7 @@ async fn disable_totp_after_enroll_happy() {
         "factors should be gone, got {}",
         left.len()
     );
-    let recovery = TotpRecoveryCode::get_from_user_id_used(
+    let recovery = TotpRecoveryCode::get_from_user_id(
         &uid,
         &valence,
         valence::use_!(r"**Test:** Fixture **Totp Recovery Code** list for `totp_recovery` so the suite can assert disable removed every recovery code. CI and developers running the suite only."),

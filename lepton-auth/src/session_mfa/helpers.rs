@@ -33,7 +33,7 @@ pub(super) async fn user_has_enabled_totp(
     #[cfg(feature = "totp")]
     {
         let uid = bare_id(user);
-        let factors = TotpFactor::get_from_user_id_used(
+        let factors = TotpFactor::get_from_user_id(
             &uid,
             valence,
             valence::use_!(r"After password **sign-in**, we **check whether an authenticator is enabled** so we know if a second factor is required before the session is fully signed in. Only this MFA gate uses that answer."),
@@ -50,7 +50,7 @@ pub(super) async fn user_has_webauthn(
     user: &RecordId,
 ) -> Result<bool, SessionMfaError> {
     let uid = bare_id(user);
-    let devices = AuthDevice::get_from_user_id_used(
+    let devices = AuthDevice::get_from_user_id(
         &uid,
         valence,
         valence::use_!(r"After password **sign-in**, we **check whether a security key is registered** so we know if a passkey challenge is required before the session is fully signed in. Only this MFA gate uses that answer."),
