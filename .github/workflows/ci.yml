@@ -103,11 +103,12 @@ jobs:
 
       - name: cargo dylint (leptos-lints)
         # zerocopy on this pinned nightly needs AVX512 on the host triple (same as orbital).
+        # crc32fast 1.5+ also needs avx512_target_feature when those crate attrs are set.
         # Lint hydrate on the host; wasm32 compile is covered by the wasm-hydrate job
         # (stdarch_x86_avx512 is unknown on wasm32).
         env:
           CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
-          RUSTFLAGS: "-D warnings -Zcrate-attr=feature(stdarch_x86_avx512)"
+          RUSTFLAGS: "-D warnings -Zcrate-attr=feature(stdarch_x86_avx512) -Zcrate-attr=feature(avx512_target_feature)"
         run: |
           cargo dylint --all -p lepton-auth-ui --no-deps -- --features hydrate
           cargo dylint --all -p lepton-auth-ui-e2e --no-deps -- --features hydrate
