@@ -61,6 +61,8 @@ pub enum EmailDriverChoice {
     Smtp,
     /// Twilio `SendGrid` Mail Send.
     SendGrid,
+    /// Direct delivery to the recipient's MX hosts, with no relay.
+    DirectMx,
 }
 
 /// Which text-message path is active.
@@ -396,7 +398,7 @@ impl EmailCandidate {
                     });
                 }
             }
-            EmailDriverChoice::SendGrid => {}
+            EmailDriverChoice::SendGrid | EmailDriverChoice::DirectMx => {}
         }
         require_email(&self.from_email, "from_email")?;
         require_email(&self.test_recipient, "test_recipient")
