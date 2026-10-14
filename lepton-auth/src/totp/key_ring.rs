@@ -6,7 +6,7 @@
 //! version in the envelope, so rows sealed under an older key keep working after
 //! a rotation and re-seal on their next successful verify.
 //!
-//! With no ring installed, [`super::seal`] falls back to the single
+//! With no ring installed, sealing falls back to the single
 //! `LEPTON_TOTP_SEAL_KEY` env key and `v1:` envelopes, which is the behavior
 //! before key rotation existed.
 
@@ -110,7 +110,7 @@ pub fn installed_key_ring() -> Option<Arc<TotpKeyRing>> {
         .clone()
 }
 
-/// Register the callback [`request_resync`] runs when an envelope names a key
+/// Register the callback that runs when an envelope names a key
 /// version this process has not loaded yet (another process rotated first).
 ///
 /// The callback must return quickly and never block on I/O; hosts use it to wake
