@@ -123,7 +123,11 @@ run_lane() {
   local lane_env=${LANE_ENV:-}
   lane_env=${lane_env//\{port\}/$port}
   t0=$(now)
-  ( cd "$o/srv" && exec env ${SERVER_ENV:-} $lane_env \
+  # SERVER_CWD=root runs the server from the repo root, for hosts that read
+  # Cargo.toml at startup and keep no files of their own.
+  local cwd=$o/srv
+  [ "${SERVER_CWD:-}" = root ] && cwd=$root
+  ( cd "$cwd" && exec env ${SERVER_ENV:-} $lane_env \
       LEPTOS_OUTPUT_NAME="$OUTPUT_NAME" LEPTOS_SITE_ROOT="$site" LEPTOS_SITE_PKG_DIR=pkg \
       LEPTOS_SITE_ADDR="127.0.0.1:$port" LEPTOS_ENV=$leptos_env \
       "$bin" >"$o/server.log" 2>&1 </dev/null ) &
